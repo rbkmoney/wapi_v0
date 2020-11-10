@@ -68,6 +68,10 @@ process_request('CreateIdentity', #{'Identity' := Params}, Context, Opts) ->
     case wapi_identity_backend:create_identity(Params, Context) of
         {ok, Identity = #{<<"id">> := IdentityId}} ->
             wapi_handler_utils:reply_ok(201, Identity, get_location('GetIdentity', [IdentityId], Opts));
+        {error, {inaccessible, _}} ->
+            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Party inaccessible">>));
+        {error, {party, notfound}} ->
+            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Party does not exist">>));
         {error, {provider, notfound}} ->
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such provider">>));
         {error, {identity_class, notfound}} ->
@@ -187,6 +191,30 @@ process_request('GetWalletAccount', #{'walletID' := WalletId}, Context, _Opts) -
         {error, {wallet, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
 
+process_request('IssueWalletGrant', #{
+    'walletID'           := WalletId,
+    'WalletGrantRequest' := #{<<"validUntil">> := Expiration, <<"asset">> := Asset}
+}, Context, _Opts) ->
+    case wapi_wallet_backend:get(WalletId, Context) of
+        {ok, _} ->
+            case wapi_backend_utils:issue_grant_token({wallets, WalletId, Asset}, Expiration, Context) of
+                {ok, Token} ->
+                    wapi_handler_utils:reply_ok(201, #{
+                        <<"token">>      => Token,
+                        <<"validUntil">> => Expiration,
+                        <<"asset">>      => Asset
+                    });
+                {error, expired} ->
+                    wapi_handler_utils:reply_ok(422,
+                        wapi_handler_utils:get_error_msg(<<"Invalid expiration: already expired">>)
+                    )
+            end;
+        {error, {wallet, notfound}} ->
+            wapi_handler_utils:reply_ok(404);
+        {error, {wallet, unauthorized}} ->
+            wapi_handler_utils:reply_ok(404)
+    end;
+    
 %% Destinations
 
 process_request('ListDestinations', Params, Context, _Opts) ->

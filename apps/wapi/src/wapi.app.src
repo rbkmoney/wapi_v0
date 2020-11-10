@@ -27,7 +27,12 @@
         cowboy_access_log,
         base64url,
         snowflake,
-        uac
+        woody_user_identity,
+        payproc_errors,
+        ff_server,
+        uac,
+        prometheus,
+        prometheus_cowboy
     ]},
     {env, []}
 ]}.
