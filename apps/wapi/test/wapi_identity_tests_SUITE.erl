@@ -163,6 +163,7 @@ create_identity(C) ->
     _.
 create_identity_provider_notfound(C) ->
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun('Create', _) -> throw(#fistful_ProviderNotFound{}) end}
     ], C),
     ?assertEqual(
@@ -174,6 +175,7 @@ create_identity_provider_notfound(C) ->
     _.
 create_identity_class_notfound(C) ->
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun('Create', _) -> throw(#fistful_IdentityClassNotFound{}) end}
     ], C),
     ?assertEqual(
@@ -185,6 +187,7 @@ create_identity_class_notfound(C) ->
     _.
 create_identity_party_inaccessible(C) ->
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun('Create', _) -> throw(#fistful_PartyInaccessible{}) end}
     ], C),
     ?assertEqual(
@@ -421,6 +424,7 @@ poll_identity_challenge_events_identity_notfound(C) ->
 create_identity_challenge_start_mocks(C, StartChallengeResultFun) ->
     PartyID = ?config(party, C),
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun
             ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
             ('StartChallenge', _) -> StartChallengeResultFun()

@@ -292,6 +292,7 @@ get_account_call_api(C) ->
 create_wallet_start_mocks(C, CreateResultFun) ->
     PartyID = ?config(party, C),
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
         {fistful_wallet, fun('Create', _) -> CreateResultFun() end}
     ], C).

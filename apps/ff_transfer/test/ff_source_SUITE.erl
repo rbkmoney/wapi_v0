@@ -22,9 +22,9 @@
 -export([get_source_ok_test/1]).
 -export([get_source_notfound_fail_test/1]).
 
--type config()         :: ct_helper:config().
--type test_case_name() :: ct_helper:test_case_name().
--type group_name()     :: ct_helper:group_name().
+-type config()         :: wapi_ct_helper:config().
+-type test_case_name() :: wapi_ct_helper:test_case_name().
+-type group_name()     :: wapi_ct_helper:group_name().
 -type test_return()    :: _ | no_return().
 
 -spec all() -> [test_case_name() | {group, group_name()}].
@@ -47,8 +47,8 @@ groups() ->
 
 -spec init_per_suite(config()) -> config().
 init_per_suite(C) ->
-    ct_helper:makeup_cfg([
-        ct_helper:test_case_name(init),
+    wapi_ct_helper:makeup_cfg([
+        wapi_ct_helper:test_case_name(init),
         ct_payment_system:setup()
     ], C).
 
@@ -69,13 +69,13 @@ end_per_group(_, _) ->
 
 -spec init_per_testcase(test_case_name(), config()) -> config().
 init_per_testcase(Name, C) ->
-    C1 = ct_helper:makeup_cfg([ct_helper:test_case_name(Name), ct_helper:woody_ctx()], C),
-    ok = ct_helper:set_context(C1),
+    C1 = wapi_ct_helper:makeup_cfg([wapi_ct_helper:test_case_name(Name), wapi_ct_helper:woody_ctx()], C),
+    ok = wapi_ct_helper:set_context(C1),
     C1.
 
 -spec end_per_testcase(test_case_name(), config()) -> _.
 end_per_testcase(_Name, _C) ->
-    ok = ct_helper:unset_context().
+    ok = wapi_ct_helper:unset_context().
 
 %% Default group test cases
 
@@ -162,7 +162,7 @@ create_identity(Party, Name, ProviderID, ClassID, _C) ->
 create_source(IID, _C) ->
     SrcResource = #{type => internal, details => <<"Infinite source of cash">>},
     SrcID = create_source(IID, <<"XSource">>, <<"RUB">>, SrcResource),
-    authorized = ct_helper:await(
+    authorized = wapi_ct_helper:await(
         authorized,
         fun () ->
             {ok, SrcM} = ff_source_machine:get(SrcID),

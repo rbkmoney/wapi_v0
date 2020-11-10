@@ -51,7 +51,7 @@
 
 %% Pipeline
 
--import(ff_pipeline, [do/1, unwrap/1]).
+-import(wapi_pipeline, [do/1, unwrap/1]).
 
 %%
 -define(NS, 'ff/destination_v2').

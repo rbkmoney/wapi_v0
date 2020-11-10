@@ -240,8 +240,8 @@ create_fail_no_resource_info_test(C) ->
 create_quote_ok_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
-    SenderToken   = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
-    ReceiverToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    SenderToken   = ?TEST_PAYMENT_TOKEN,
+    ReceiverToken = ?TEST_PAYMENT_TOKEN,
     {ok, #{<<"token">> := Token}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -280,8 +280,8 @@ create_with_quote_token_ok_test(C) ->
             ('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)}
         end}
     ], C),
-    SenderToken   = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
-    ReceiverToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    SenderToken   = ?TEST_PAYMENT_TOKEN,
+    ReceiverToken = ?TEST_PAYMENT_TOKEN,
     {ok, #{<<"token">> := QuoteToken}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -335,8 +335,8 @@ create_with_quote_token_ok_test(C) ->
     _.
 create_with_bad_quote_token_fail_test(C) ->
     create_ok_start_mocks(C),
-    SenderToken   = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
-    ReceiverToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    SenderToken   = ?TEST_PAYMENT_TOKEN,
+    ReceiverToken = ?TEST_PAYMENT_TOKEN,
     {error, {422, #{
         <<"message">> := <<"Token can't be verified">>
     }}} = call_api(
@@ -499,8 +499,8 @@ get_events_call_api(C) ->
     ).
 
 create_p2p_transfer_call_api(C) ->
-    SenderToken   = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
-    ReceiverToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    SenderToken   = ?TEST_PAYMENT_TOKEN,
+    ReceiverToken = ?TEST_PAYMENT_TOKEN,
     call_api(
         fun swag_client_wallet_p2_p_api:create_p2_p_transfer/3,
         #{
@@ -529,8 +529,8 @@ create_p2p_transfer_call_api(C) ->
     ).
 
 quote_p2p_transfer_call_api(C, IdentityID) ->
-    SenderToken   = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
-    ReceiverToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    SenderToken   = ?TEST_PAYMENT_TOKEN,
+    ReceiverToken = ?TEST_PAYMENT_TOKEN,
     call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -610,4 +610,3 @@ call_api(F, Params, Context) ->
     {Url, PreparedParams, Opts} = wapi_client_lib:make_request(Context, Params),
     Response = F(Url, PreparedParams, Opts),
     wapi_client_lib:handle_response(Response).
-    

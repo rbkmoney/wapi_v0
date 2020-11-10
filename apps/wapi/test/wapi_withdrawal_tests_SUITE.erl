@@ -482,7 +482,7 @@ get_events_ok(C) ->
                 <<"limit">> => 10
             }
         },
-        ct_helper:cfg(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).
 
 -spec get_events_fail_withdrawal_notfound(config()) ->
@@ -549,6 +549,7 @@ create_qoute_call_api(C) ->
 create_withdrawal_start_mocks(C, CreateWithdrawalResultFun) ->
     PartyID = ?config(party, C),
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_wallet, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
         {fistful_destination, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
         {fistful_withdrawal, fun('Create', _) -> CreateWithdrawalResultFun() end}

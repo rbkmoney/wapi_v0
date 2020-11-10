@@ -458,6 +458,7 @@ make_destination(C, ResourceType) ->
  create_destination_start_mocks(C, CreateDestinationResultFun) ->
     PartyID = ?config(party, C),
     wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
         {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
         {fistful_destination, fun('Create', _) -> CreateDestinationResultFun() end}
     ], C).
@@ -473,7 +474,7 @@ create_destination_call_api(C, Destination) ->
         #{
             body => build_destination_spec(Destination)
         },
-        ct_helper:cfg(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).
 
 get_destination_call_api(C) ->
@@ -484,5 +485,5 @@ get_destination_call_api(C) ->
                 <<"destinationID">> => ?STRING
             }
         },
-        ct_helper:cfg(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).

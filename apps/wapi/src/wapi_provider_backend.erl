@@ -15,7 +15,7 @@
 
 %% Pipeline
 
--import(ff_pipeline, [do/1, unwrap/1]).
+-import(wapi_pipeline, [do/1, unwrap/1]).
 
 -spec get_providers([binary()], handler_context()) -> [map()].
 get_providers(Residences, HandlerContext) ->
@@ -82,7 +82,12 @@ list_identity_classes(#provider_Provider{identity_classes = IdentityClasses}) ->
     maps:keys(IdentityClasses).
 
 get_identity_class(IdentityClassID, #provider_Provider{identity_classes = IdentityClasses}) ->
-    ff_map:find(IdentityClassID, IdentityClasses).
+    case IdentityClasses of
+        #{IdentityClassID := IdentityClass} ->
+            {ok, IdentityClass};
+        #{} ->
+            {error, notfound}
+    end.
 
 -spec not_implemented() -> no_return().
 not_implemented() ->
