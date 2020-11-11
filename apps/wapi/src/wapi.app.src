@@ -27,7 +27,6 @@
         cowboy_access_log,
         base64url,
         snowflake,
-        payproc_errors,
         uac,
         prometheus,
         prometheus_cowboy
