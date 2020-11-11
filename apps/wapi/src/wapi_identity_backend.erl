@@ -79,6 +79,7 @@ get_identities(_Params, _Context) ->
     wapi_handler_utils:throw_not_implemented().
 
 -spec create_identity_challenge(id(), params(), handler_context()) -> result(map(),
+    {party, notfound}               |
     {identity, notfound}               |
     {identity, unauthorized}           |
     {challenge, pending}               |
@@ -105,6 +106,8 @@ create_identity_challenge(ChallengeID, IdentityID, Params, HandlerContext) ->
             case service_call(Request, HandlerContext) of
                 {ok, Challenge} ->
                     {ok, unmarshal(challenge, {Challenge, HandlerContext})};
+                {exception, #fistful_PartyNotFound{}} ->
+                    {error, {party, notfound}};
                 {exception, #fistful_IdentityNotFound{}} ->
                     {error, {identity, notfound}};
                 {exception, #fistful_ChallengePending{}} ->

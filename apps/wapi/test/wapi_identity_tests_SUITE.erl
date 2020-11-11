@@ -25,6 +25,7 @@
 -export([
     create_identity/1,
     create_identity_provider_notfound/1,
+    create_identity_party_notfound/1,
     create_identity_class_notfound/1,
     create_identity_party_inaccessible/1,
     create_identity_thrift_name/1,
@@ -78,6 +79,7 @@ groups() ->
             [
                 create_identity,
                 create_identity_provider_notfound,
+                create_identity_party_notfound,
                 create_identity_class_notfound,
                 create_identity_party_inaccessible,
                 create_identity_thrift_name,
@@ -168,6 +170,18 @@ create_identity_provider_notfound(C) ->
     ], C),
     ?assertEqual(
         {error, {422, #{<<"message">> => <<"No such provider">>}}},
+        create_identity_call_api(C)
+    ).
+
+-spec create_identity_party_notfound(config()) ->
+    _.
+create_identity_party_notfound(C) ->
+    wapi_ct_helper:mock_services([
+        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+        {fistful_identity, fun('Create', _) -> throw(#fistful_PartyNotFound{}) end}
+    ], C),
+    ?assertEqual(
+        {error, {422, #{<<"message">> => <<"Party does not exist">>}}},
         create_identity_call_api(C)
     ).
 
