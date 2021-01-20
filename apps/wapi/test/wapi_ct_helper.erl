@@ -25,11 +25,11 @@
 -export([get_lifetime/0]).
 -export([create_auth_ctx/1]).
 
--define(WAPI_IP,        "::").
--define(WAPI_PORT,      8080).
+-define(WAPI_IP, "::").
+-define(WAPI_PORT, 8080).
 -define(WAPI_HOST_NAME, "localhost").
--define(WAPI_URL,       ?WAPI_HOST_NAME ++ ":" ++ integer_to_list(?WAPI_PORT)).
--define(DOMAIN,         <<"wallet-api">>).
+-define(WAPI_URL, ?WAPI_HOST_NAME ++ ":" ++ integer_to_list(?WAPI_PORT)).
+-define(DOMAIN, <<"wallet-api">>).
 
 %%
 -type config() :: [{atom(), any()}].
@@ -142,13 +142,10 @@ start_app({wapi = AppName, Config}) ->
         }},
         {events_fetch_limit, 32}
     ]);
-
 start_app(AppName) ->
     [genlib_app:start_application(AppName)].
 
--spec start_app(app_name(), list()) ->
-    [app_name()].
-
+-spec start_app(app_name(), list()) -> [app_name()].
 start_app(AppName, Env) ->
     genlib_app:start_application_with(AppName, Env).
 
@@ -173,21 +170,19 @@ set_app_env(AppName, Env) ->
     ).
 
 -spec get_keysource(_, config()) ->
-    _.
 
+-spec get_keysource(_, config()) -> _.
 get_keysource(Key, Config) ->
     filename:join(?config(data_dir, Config), Key).
 
--spec issue_token(_, _, _, _) -> % TODO: spec
-    {ok, binary()} |
-    {error,
-        nonexistent_signee
-    }.
-
+% TODO: spec
+-spec issue_token(_, _, _, _) ->
+    {ok, binary()}
+    | {error, nonexistent_signee}.
 issue_token(PartyID, ACL, LifeTime, Domain) ->
     Claims = #{
         <<"exp">> => LifeTime,
-        <<"resource_access">> =>#{
+        <<"resource_access">> => #{
             Domain => uac_acl:from_list(ACL)
         }
     },
@@ -198,31 +193,23 @@ issue_token(PartyID, ACL, LifeTime, Domain) ->
         ?SIGNEE
     ).
 
--spec get_context(binary()) ->
-    wapi_client_lib:context().
-
+-spec get_context(binary()) -> wapi_client_lib:context().
 get_context(Token) ->
     wapi_client_lib:get_context(?WAPI_URL, Token, 10000, ipv4).
 
 % TODO move it to `wapi_dummy_service`, looks more appropriate
 
--spec start_mocked_service_sup(module()) ->
-    pid().
-
+-spec start_mocked_service_sup(module()) -> pid().
 start_mocked_service_sup(Module) ->
     {ok, SupPid} = supervisor:start_link(Module, []),
     _ = unlink(SupPid),
     SupPid.
 
--spec stop_mocked_service_sup(pid()) ->
-    _.
-
+-spec stop_mocked_service_sup(pid()) -> _.
 stop_mocked_service_sup(SupPid) ->
     exit(SupPid, shutdown).
 
--spec mock_services(_, _) ->
-    _.
-
+-spec mock_services(_, _) -> _.
 mock_services(Services, SupOrConfig) ->
     maps:map(fun start_woody_client/2, mock_services_(Services, SupOrConfig)).
 
@@ -241,13 +228,10 @@ start_woody_client(wapi, Urls) ->
     ),
     start_app(wapi_woody_client, []).
 
--spec mock_services_(_, _) ->
-    _.
-
+-spec mock_services_(_, _) -> _.
 % TODO need a better name
 mock_services_(Services, Config) when is_list(Config) ->
     mock_services_(Services, ?config(test_sup, Config));
-
 mock_services_(Services, SupPid) when is_pid(SupPid) ->
     Name = lists:map(fun get_service_name/1, Services),
 
@@ -265,7 +249,7 @@ mock_services_(Services, SupPid) when is_pid(SupPid) ->
     {ok, _} = supervisor:start_child(SupPid, ChildSpec),
 
     lists:foldl(
-        fun (Service, Acc) ->
+        fun(Service, Acc) ->
             ServiceName = get_service_name(Service),
             case ServiceName of
                 bender_thrift ->
@@ -304,22 +288,18 @@ make_url(ServiceName, Port) ->
 make_path(ServiceName) ->
     "/" ++ atom_to_list(ServiceName).
 
--spec get_lifetime() ->
-    map().
-
+-spec get_lifetime() -> map().
 get_lifetime() ->
     get_lifetime(0, 0, 7).
 
 get_lifetime(YY, MM, DD) ->
     #{
-       <<"years">>  => YY,
-       <<"months">> => MM,
-       <<"days">>   => DD
+        <<"years">> => YY,
+        <<"months">> => MM,
+        <<"days">> => DD
     }.
 
--spec create_auth_ctx(ff_party:id()) ->
-    wapi_handler:context().
-
+-spec create_auth_ctx(ff_party:id()) -> wapi_handler:context().
 create_auth_ctx(PartyID) ->
     #{
         swagger_context => #{auth_context => {?STRING, PartyID, #{}}}

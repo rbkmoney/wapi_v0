@@ -4,6 +4,7 @@
 -behaviour(wapi_handler).
 
 %% swag_server_wallet_logic_handler callbacks
+-export([map_error/2]).
 -export([authorize_api_key/3]).
 -export([handle_request/4]).
 
@@ -12,18 +13,46 @@
 
 %% Types
 
--type req_data()        :: wapi_handler:req_data().
+-type req_data() :: wapi_handler:req_data().
 -type handler_context() :: wapi_handler:context().
--type request_result()  :: wapi_handler:request_result().
--type operation_id()    :: swag_server_wallet:operation_id().
--type api_key()         :: swag_server_wallet:api_key().
+-type request_result() :: wapi_handler:request_result().
+-type operation_id() :: swag_server_wallet:operation_id().
+-type api_key() :: swag_server_wallet:api_key().
 -type request_context() :: swag_server_wallet:request_context().
--type handler_opts()    :: swag_server_wallet:handler_opts(_).
+-type handler_opts() :: swag_server_wallet:handler_opts(_).
 
 %% API
 
--spec authorize_api_key(operation_id(), api_key(), handler_opts()) ->
-    false | {true, wapi_auth:context()}.
+-spec map_error(atom(), swag_server_wallet_validation:error()) -> swag_server_wallet:error_reason().
+map_error(validation_error, Error) ->
+    Type = map_error_type(maps:get(type, Error)),
+    Name = genlib:to_binary(maps:get(param_name, Error)),
+    Message =
+        case maps:get(description, Error, undefined) of
+            undefined ->
+                <<"Request parameter: ", Name/binary, ", error type: ", Type/binary>>;
+            Description ->
+                DescriptionBin = genlib:to_binary(Description),
+                <<"Request parameter: ", Name/binary, ", error type: ", Type/binary, ", description: ",
+                    DescriptionBin/binary>>
+        end,
+    jsx:encode(#{
+        <<"errorType">> => Type,
+        <<"name">> => Name,
+        <<"description">> => Message
+    }).
+
+-spec map_error_type(swag_server_wallet_validation:error_type()) -> binary().
+map_error_type(no_match) -> <<"NoMatch">>;
+map_error_type(not_found) -> <<"NotFound">>;
+map_error_type(not_in_range) -> <<"NotInRange">>;
+map_error_type(wrong_length) -> <<"WrongLength">>;
+map_error_type(wrong_size) -> <<"WrongSize">>;
+map_error_type(schema_violated) -> <<"SchemaViolated">>;
+map_error_type(wrong_type) -> <<"WrongType">>;
+map_error_type(wrong_array) -> <<"WrongArray">>.
+
+-spec authorize_api_key(operation_id(), api_key(), handler_opts()) -> false | {true, wapi_auth:context()}.
 authorize_api_key(OperationID, ApiKey, _Opts) ->
     ok = scoper:add_meta(#{api => wallet, operation_id => OperationID}),
     case uac:authorize_api_key(ApiKey, wapi_auth:get_verification_options()) of
@@ -40,10 +69,8 @@ authorize_api_key(OperationID, ApiKey, _Opts) ->
 handle_request(OperationID, Req, SwagContext, Opts) ->
     wapi_handler:handle_request(wallet, OperationID, Req, SwagContext, Opts).
 
--spec process_request(operation_id(), req_data(), handler_context(), handler_opts()) ->
-    request_result().
-
 %% Providers
+-spec process_request(operation_id(), req_data(), handler_context(), handler_opts()) -> request_result().
 process_request('ListProviders', #{'residence' := Residence}, Context, _Opts) ->
     Providers = wapi_provider_backend:get_providers(maybe_to_list(Residence), Context),
     wapi_handler_utils:reply_ok(200, Providers);
@@ -84,19 +111,19 @@ process_request('GetProviderIdentityLevel', #{
     %%     {error, notfound} -> wapi_handler_utils:reply_ok(404)
     %% end;
     not_implemented();
-
 %% Identities
 process_request('ListIdentities', Params, Context, _Opts) ->
     case wapi_stat_backend:list_identities(Params, Context) of
-        {ok, Result} -> wapi_handler_utils:reply_ok(200, Result);
+        {ok, Result} ->
+            wapi_handler_utils:reply_ok(200, Result);
         {error, {invalid, Errors}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"NoMatch">>,
+                <<"errorType">> => <<"NoMatch">>,
                 <<"description">> => Errors
             });
         {error, {bad_token, Reason}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"InvalidToken">>,
+                <<"errorType">> => <<"InvalidToken">>,
                 <<"description">> => Reason
             })
     end;
@@ -166,7 +193,7 @@ process_request('GetIdentityChallenge', #{
         {ok, Challenge}                   -> wapi_handler_utils:reply_ok(200, Challenge);
         {error, {identity, notfound}}     -> wapi_handler_utils:reply_ok(404);
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404);
-        {error, {challenge, notfound}}    -> wapi_handler_utils:reply_ok(404)
+        {error, {challenge, notfound}} -> wapi_handler_utils:reply_ok(404)
     end;
 process_request('PollIdentityChallengeEvents', Params, Context, _Opts) ->
     case wapi_identity_backend:get_identity_challenge_events(Params, Context) of
@@ -179,9 +206,8 @@ process_request('GetIdentityChallengeEvent', Params, Context, _Opts) ->
         {ok, Event}                       -> wapi_handler_utils:reply_ok(200, Event);
         {error, {identity, notfound}}     -> wapi_handler_utils:reply_ok(404);
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404);
-        {error, {event, notfound}}        -> wapi_handler_utils:reply_ok(404)
+        {error, {event, notfound}} -> wapi_handler_utils:reply_ok(404)
     end;
-
 %% Wallets
 
 process_request('ListWallets', Params, Context, _Opts) ->
@@ -242,12 +268,13 @@ process_request('IssueWalletGrant', #{
             case wapi_backend_utils:issue_grant_token({wallets, WalletId, Asset}, Expiration, Context) of
                 {ok, Token} ->
                     wapi_handler_utils:reply_ok(201, #{
-                        <<"token">>      => Token,
+                        <<"token">> => Token,
                         <<"validUntil">> => Expiration,
-                        <<"asset">>      => Asset
+                        <<"asset">> => Asset
                     });
                 {error, expired} ->
-                    wapi_handler_utils:reply_ok(422,
+                    wapi_handler_utils:reply_ok(
+                        422,
                         wapi_handler_utils:get_error_msg(<<"Invalid expiration: already expired">>)
                     )
             end;
@@ -261,15 +288,16 @@ process_request('IssueWalletGrant', #{
 
 process_request('ListDestinations', Params, Context, _Opts) ->
     case wapi_stat_backend:list_destinations(Params, Context) of
-        {ok, Result} -> wapi_handler_utils:reply_ok(200, Result);
+        {ok, Result} ->
+            wapi_handler_utils:reply_ok(200, Result);
         {error, {invalid, Errors}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"NoMatch">>,
+                <<"errorType">> => <<"NoMatch">>,
                 <<"description">> => Errors
             });
         {error, {bad_token, Reason}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"InvalidToken">>,
+                <<"errorType">> => <<"InvalidToken">>,
                 <<"description">> => Reason
             })
     end;
@@ -320,11 +348,12 @@ process_request('IssueDestinationGrant', #{
             case issue_grant_token({destinations, DestinationId}, Expiration, Context) of
                 {ok, Token} ->
                     wapi_handler_utils:reply_ok(201, #{
-                        <<"token">>      => Token,
+                        <<"token">> => Token,
                         <<"validUntil">> => Expiration
                     });
                 {error, expired} ->
-                    wapi_handler_utils:reply_ok(422,
+                    wapi_handler_utils:reply_ok(
+                        422,
                         wapi_handler_utils:get_error_msg(<<"Invalid expiration: already expired">>)
                     )
             end;
@@ -393,19 +422,23 @@ process_request('CreateWithdrawal', #{'WithdrawalParameters' := Params}, Context
         {error, {wallet, unauthorized}} ->
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Wallet unauthorized">>));
         {error, {quote_invalid_party, _}} ->
-            wapi_handler_utils:reply_ok(422,
+            wapi_handler_utils:reply_ok(
+                422,
                 wapi_handler_utils:get_error_msg(<<"Withdrawal owner differs from quote`s one">>)
             );
         {error, {quote_invalid_wallet, _}} ->
-            wapi_handler_utils:reply_ok(422,
+            wapi_handler_utils:reply_ok(
+                422,
                 wapi_handler_utils:get_error_msg(<<"Withdrawal wallet differs from quote`s one">>)
             );
         {error, {quote, {invalid_destination, _}}} ->
-            wapi_handler_utils:reply_ok(422,
+            wapi_handler_utils:reply_ok(
+                422,
                 wapi_handler_utils:get_error_msg(<<"Withdrawal destination differs from quote`s one">>)
             );
         {error, {quote, {invalid_body, _}}} ->
-            wapi_handler_utils:reply_ok(422,
+            wapi_handler_utils:reply_ok(
+                422,
                 wapi_handler_utils:get_error_msg(<<"Withdrawal body differs from quote`s one">>)
             );
         {error, {forbidden_currency, _}} ->
@@ -737,8 +770,8 @@ process_request('QuoteP2PTransferWithTemplate', #{
                 wapi_handler_utils:get_error_msg(Details));
         {error, {invalid_resource, Type}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"InvalidResourceToken">>,
-                <<"name">>        => Type,
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
                 <<"description">> => <<"Specified resource token is invalid">>
             })
     end;
@@ -764,8 +797,8 @@ process_request('CreateP2PTransferWithTemplate', #{
                 wapi_handler_utils:get_error_msg(Details));
         {error, {invalid_resource, Type}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"InvalidResourceToken">>,
-                <<"name">>        => Type,
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
                 <<"description">> => <<"Specified resource token is invalid">>
             });
         {error, {token, expired}} ->
@@ -935,10 +968,11 @@ get_expiration_deadline(Expiration) ->
             {error, expired}
     end.
 
--define(DEFAULT_URL_LIFETIME, 60). % seconds
+% seconds
+-define(DEFAULT_URL_LIFETIME, 60).
 
 get_default_url_lifetime() ->
-    Now      = erlang:system_time(second),
+    Now = erlang:system_time(second),
     Lifetime = application:get_env(wapi, file_storage_url_lifetime, ?DEFAULT_URL_LIFETIME),
     genlib_rfc3339:format(Now + Lifetime, second).
 

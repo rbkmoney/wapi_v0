@@ -12,7 +12,6 @@
 -include_lib("fistful_proto/include/ff_proto_p2p_transfer_thrift.hrl").
 -include_lib("fistful_proto/include/ff_proto_p2p_session_thrift.hrl").
 
-
 -export([all/0]).
 -export([groups/0]).
 -export([init_per_suite/1]).
@@ -26,6 +25,8 @@
 
 -export([
     create_ok_test/1,
+    create_fail_resource_token_invalid_test/1,
+    create_fail_resource_token_expire_test/1,
     create_fail_unauthorized_test/1,
     create_fail_identity_notfound_test/1,
     create_fail_forbidden_operation_currency_test/1,
@@ -33,6 +34,8 @@
     create_fail_operation_not_permitted_test/1,
     create_fail_no_resource_info_test/1,
     create_quote_ok_test/1,
+    create_quote_fail_resource_token_invalid_test/1,
+    create_quote_fail_resource_token_expire_test/1,
     create_with_quote_token_ok_test/1,
     create_with_bad_quote_token_fail_test/1,
     get_quote_fail_identity_not_found_test/1,
@@ -52,51 +55,50 @@
 -define(badresp(Code), {error, {invalid_response_code, Code}}).
 -define(emptyresp(Code), {error, {Code, #{}}}).
 
--type test_case_name()  :: atom().
--type config()          :: [{atom(), any()}].
--type group_name()      :: atom().
+-type test_case_name() :: atom().
+-type config() :: [{atom(), any()}].
+-type group_name() :: atom().
 
 -behaviour(supervisor).
 
--spec init([]) ->
-    {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
+-spec init([]) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
 init([]) ->
     {ok, {#{strategy => one_for_all, intensity => 1, period => 1}, []}}.
 
--spec all() ->
-    [test_case_name()].
+-spec all() -> [test_case_name()].
 all() ->
     [
         {group, base}
     ].
 
--spec groups() ->
-    [{group_name(), list(), [test_case_name()]}].
+-spec groups() -> [{group_name(), list(), [test_case_name()]}].
 groups() ->
     [
-        {base, [],
-            [
-                create_ok_test,
-                create_fail_unauthorized_test,
-                create_fail_identity_notfound_test,
-                create_fail_forbidden_operation_currency_test,
-                create_fail_forbidden_operation_amount_test,
-                create_fail_operation_not_permitted_test,
-                create_fail_no_resource_info_test,
-                create_quote_ok_test,
-                create_with_quote_token_ok_test,
-                create_with_bad_quote_token_fail_test,
-                get_quote_fail_identity_not_found_test,
-                get_quote_fail_forbidden_operation_currency_test,
-                get_quote_fail_forbidden_operation_amount_test,
-                get_quote_fail_operation_not_permitted_test,
-                get_quote_fail_no_resource_info_test,
-                get_ok_test,
-                get_fail_p2p_notfound_test,
-                get_events_ok,
-                get_events_fail
-            ]
-        }
+        {base, [], [
+            create_ok_test,
+            create_fail_resource_token_invalid_test,
+            create_fail_resource_token_expire_test,
+            create_fail_unauthorized_test,
+            create_fail_identity_notfound_test,
+            create_fail_forbidden_operation_currency_test,
+            create_fail_forbidden_operation_amount_test,
+            create_fail_operation_not_permitted_test,
+            create_fail_no_resource_info_test,
+            create_quote_ok_test,
+            create_quote_fail_resource_token_invalid_test,
+            create_quote_fail_resource_token_expire_test,
+            create_with_quote_token_ok_test,
+            create_with_bad_quote_token_fail_test,
+            get_quote_fail_identity_not_found_test,
+            get_quote_fail_forbidden_operation_currency_test,
+            get_quote_fail_forbidden_operation_amount_test,
+            get_quote_fail_operation_not_permitted_test,
+            get_quote_fail_no_resource_info_test,
+            get_ok_test,
+            get_fail_p2p_notfound_test,
+            get_events_ok,
+            get_events_fail
+        ]}
     ].
 
 %%
@@ -130,26 +132,23 @@ init_per_group(Group, Config) when Group =:= base ->
     ContextPcidss = get_context("wapi-pcidss:8080", Token),
     [
         {context_pcidss, ContextPcidss},
-        {context, wapi_ct_helper:get_context(Token)} |
-        Config1
+        {context, wapi_ct_helper:get_context(Token)}
+        | Config1
     ];
 init_per_group(_, Config) ->
     Config.
 
--spec end_per_group(group_name(), config()) ->
-    _.
+-spec end_per_group(group_name(), config()) -> _.
 end_per_group(_Group, _C) ->
     ok.
 
--spec init_per_testcase(test_case_name(), config()) ->
-    config().
+-spec init_per_testcase(test_case_name(), config()) -> config().
 init_per_testcase(Name, C) ->
     C1 = wapi_ct_helper:makeup_cfg([wapi_ct_helper:test_case_name(Name), wapi_ct_helper:woody_ctx()], C),
     ok = wapi_context:save(C1),
     [{test_sup, wapi_ct_helper:start_mocked_service_sup(?MODULE)} | C1].
 
--spec end_per_testcase(test_case_name(), config()) ->
-    config().
+-spec end_per_testcase(test_case_name(), config()) -> config().
 end_per_testcase(_Name, C) ->
     ok = wapi_context:cleanup(),
     wapi_ct_helper:stop_mocked_service_sup(?config(test_sup, C)),
@@ -164,6 +163,50 @@ create_ok_test(C) ->
     create_ok_start_mocks(C),
     {ok, _} = create_p2p_transfer_call_api(C).
 
+-spec create_fail_resource_token_invalid_test(config()) -> _.
+create_fail_resource_token_invalid_test(C) ->
+    create_ok_start_mocks(C),
+    InvalidToken = <<"v1.InvalidToken">>,
+    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardSenderResourceParams">>
+            }}},
+        create_p2p_transfer_call_api(C, InvalidToken, ValidToken)
+    ),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardReceiverResourceParams">>
+            }}},
+        create_p2p_transfer_call_api(C, ValidToken, InvalidToken)
+    ).
+
+-spec create_fail_resource_token_expire_test(config()) -> _.
+create_fail_resource_token_expire_test(C) ->
+    create_ok_start_mocks(C),
+    InvalidToken = store_bank_card(wapi_utils:deadline_from_timeout(0)),
+    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardSenderResourceParams">>
+            }}},
+        create_p2p_transfer_call_api(C, InvalidToken, ValidToken)
+    ),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardReceiverResourceParams">>
+            }}},
+        create_p2p_transfer_call_api(C, ValidToken, InvalidToken)
+    ).
+    
 -spec create_fail_unauthorized_test(config()) ->
     _.
 create_fail_unauthorized_test(C) ->
@@ -266,6 +309,52 @@ create_quote_ok_test(C) ->
     {ok, {_, _, Payload}} = uac_authorizer_jwt:verify(Token, #{}),
     {ok, #p2p_transfer_Quote{identity_id = IdentityID}} = wapi_p2p_quote:decode_token_payload(Payload).
 
+-spec create_quote_fail_resource_token_invalid_test(config()) -> _.
+create_quote_fail_resource_token_invalid_test(C) ->
+    IdentityID = <<"id">>,
+    get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
+    InvalidToken = <<"v1.InvalidToken">>,
+    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardSenderResource">>
+            }}},
+        quote_p2p_transfer_call_api(C, IdentityID, InvalidToken, ValidToken)
+    ),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardReceiverResource">>
+            }}},
+        quote_p2p_transfer_call_api(C, IdentityID, ValidToken, InvalidToken)
+    ).
+
+-spec create_quote_fail_resource_token_expire_test(config()) -> _.
+create_quote_fail_resource_token_expire_test(C) ->
+    IdentityID = <<"id">>,
+    get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
+    InvalidToken = store_bank_card(wapi_utils:deadline_from_timeout(0)),
+    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardSenderResource">>
+            }}},
+        quote_p2p_transfer_call_api(C, IdentityID, InvalidToken, ValidToken)
+    ),
+    ?assertMatch(
+        {error,
+            {400, #{
+                <<"errorType">> := <<"InvalidResourceToken">>,
+                <<"name">> := <<"BankCardReceiverResource">>
+            }}},
+        quote_p2p_transfer_call_api(C, IdentityID, ValidToken, InvalidToken)
+    ).
+   
 -spec create_with_quote_token_ok_test(config()) ->
     _.
 create_with_quote_token_ok_test(C) ->
