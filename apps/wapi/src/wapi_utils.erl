@@ -291,6 +291,7 @@ clamp_max_request_deadline(Value) when is_integer(Value) ->
 -spec get_unique_id() -> binary().
 get_unique_id() ->
     wapi_id:generate_snowflake_id().
+
 %%
 
 -ifdef(TEST).

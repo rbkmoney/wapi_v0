@@ -35,14 +35,16 @@
 
 -define(TEST_PAYMENT_TOKEN, ?TEST_PAYMENT_TOKEN(visa)).
 
--define(TEST_PAYMENT_TOKEN(PaymentSystem), wapi_utils:map_to_base64url(#{
-    <<"type"          >> => <<"bank_card">>,
-    <<"token"         >> => ?STRING,
-    <<"payment_system">> => atom_to_binary(PaymentSystem, utf8),
-    <<"bin"           >> => <<"411111">>,
-    <<"lastDigits"    >> => <<"4111">>,
-    <<"masked_pan"    >> => <<"1111">>
-})).
+-define(TEST_PAYMENT_TOKEN(PaymentSystem),
+    wapi_utils:map_to_base64url(#{
+        <<"type">> => <<"bank_card">>,
+        <<"token">> => ?STRING,
+        <<"payment_system">> => atom_to_binary(PaymentSystem, utf8),
+        <<"bin">> => <<"411111">>,
+        <<"lastDigits">> => <<"4111">>,
+        <<"masked_pan">> => <<"1111">>
+    })
+).
 
 -define(CASH, #'Cash'{
     amount = ?INTEGER,
@@ -619,4 +621,3 @@
     receiver = ?RESOURCE_BANK_CARD,
     fees = ?FEES
 }).
-

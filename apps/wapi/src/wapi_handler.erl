@@ -95,8 +95,7 @@ throw_result(Res) ->
 get_handler(wallet) -> wapi_wallet_handler;
 get_handler(payres) -> wapi_payres_handler.
 
--spec create_woody_context(tag(), req_data(), wapi_auth:context(), opts()) ->
-    woody_context:ctx().
+-spec create_woody_context(tag(), req_data(), wapi_auth:context(), opts()) -> woody_context:ctx().
 create_woody_context(Tag, #{'X-Request-ID' := RequestID}, _AuthContext, _Opts) ->
     RpcID = #{trace_id := TraceID} = woody_context:new_rpc_id(genlib:to_binary(RequestID)),
     ok = scoper:add_meta(#{request_id => RequestID, trace_id => TraceID}),
@@ -108,8 +107,7 @@ attach_deadline(undefined, Context) ->
 attach_deadline(Deadline, Context) ->
     woody_context:set_deadline(Deadline, Context).
 
--spec create_handler_context(swagger_context(), woody_context:ctx()) ->
-    context().
+-spec create_handler_context(swagger_context(), woody_context:ctx()) -> context().
 create_handler_context(SwagContext, WoodyContext) ->
     #{
         woody_context => WoodyContext,
@@ -126,8 +124,7 @@ process_woody_error(_Source, resource_unavailable, _Details) ->
 process_woody_error(_Source, result_unknown, _Details) ->
     wapi_handler_utils:reply_error(504).
 
--spec create_wapi_context(woody_context:ctx()) ->
-    wapi_context:context().
+-spec create_wapi_context(woody_context:ctx()) -> wapi_context:context().
 create_wapi_context(WoodyContext) ->
     ContextOptions = #{
         woody_context => WoodyContext

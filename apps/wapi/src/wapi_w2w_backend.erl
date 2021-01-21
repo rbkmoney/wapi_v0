@@ -116,7 +116,6 @@ marshal(body, #{
     };
 marshal(context, Ctx) ->
     wapi_codec:marshal(context, Ctx);
-
 marshal(T, V) ->
     wapi_codec:marshal(T, V).
 

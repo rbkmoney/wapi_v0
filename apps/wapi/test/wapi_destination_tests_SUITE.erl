@@ -87,23 +87,22 @@ groups() ->
 %% starting/stopping
 %%
 -spec init_per_suite(config()) -> config().
-
 init_per_suite(C) ->
     wapi_ct_helper:init_suite(?MODULE, C).
 
 -spec end_per_suite(config()) -> _.
-
 end_per_suite(C) ->
     _ = wapi_ct_helper:stop_mocked_service_sup(?config(suite_test_sup, C)),
     _ = [application:stop(App) || App <- ?config(apps, C)],
     ok.
 
--spec init_per_group(group_name(), config()) ->
-    config().
+-spec init_per_group(group_name(), config()) -> config().
 init_per_group(Group, Config) when Group =:= base ->
-    ok = wapi_context:save(wapi_context:create(#{
-        woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
-    })),
+    ok = wapi_context:save(
+        wapi_context:create(#{
+            woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
+        })
+    ),
     Party = genlib:bsuuid(),
     {ok, Token} = wapi_ct_helper:issue_token(Party, [{[party], write}], unlimited, ?DOMAIN),
     Config1 = [{party, Party} | Config],
@@ -291,16 +290,14 @@ do_destination_lifecycle(ResourceType, C) ->
     Resource = generate_resource(ResourceType),
     Context = generate_context(PartyID),
     Destination = generate_destination(Identity#idnt_IdentityState.id, Resource, Context),
-    wapi_ct_helper:mock_services([
-        {bender_thrift,
-            fun
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun
                 ('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT};
                 ('GetInternalID', _) -> {ok, ?GET_INTERNAL_ID_RESULT}
-            end
-        },
-        {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
-        {fistful_destination,
-            fun
+            end},
+            {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
+            {fistful_destination, fun
                 ('Create', _) -> {ok, Destination};
                 ('Get', _) -> {ok, Destination}
             end}
@@ -347,8 +344,7 @@ do_destination_lifecycle(ResourceType, C) ->
     ?assertEqual(#{<<"key">> => <<"val">>}, maps:get(<<"metadata">>, CreateResult)),
     {ok, Resource, maps:get(<<"resource">>, CreateResult)}.
 
--spec call_api(function(), map(), wapi_client_lib:context()) ->
-    {ok, term()} | {error, term()}.
+-spec call_api(function(), map(), wapi_client_lib:context()) -> {ok, term()} | {error, term()}.
 call_api(F, Params, Context) ->
     {Url, PreparedParams, Opts} = wapi_client_lib:make_request(Context, Params),
     Response = F(Url, PreparedParams, Opts),
@@ -495,18 +491,24 @@ make_destination(C, ResourceType) ->
     Context = generate_context(PartyID),
     generate_destination(Identity#idnt_IdentityState.id, Resource, Context).
 
- create_destination_start_mocks(C, CreateDestinationResultFun) ->
+create_destination_start_mocks(C, CreateDestinationResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
-        {fistful_destination, fun('Create', _) -> CreateDestinationResultFun() end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
+            {fistful_destination, fun('Create', _) -> CreateDestinationResultFun() end}
+        ],
+        C
+    ).
 
- get_destination_start_mocks(C, GetDestinationResultFun) ->
-    wapi_ct_helper:mock_services([
-        {fistful_destination, fun('Get', _) -> GetDestinationResultFun() end}
-    ], C).
+get_destination_start_mocks(C, GetDestinationResultFun) ->
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_destination, fun('Get', _) -> GetDestinationResultFun() end}
+        ],
+        C
+    ).
 
 create_destination_call_api(C, Destination) ->
     create_destination_call_api(C, Destination, undefined).

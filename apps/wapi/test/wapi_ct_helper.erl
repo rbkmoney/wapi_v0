@@ -40,29 +40,25 @@
 -define(SIGNEE, wapi).
 
 -spec cfg(atom(), config()) -> term().
-
 cfg(Key, Config) ->
     case lists:keyfind(Key, 1, Config) of
         {Key, V} -> V;
-        _        -> error({'ct config entry missing', Key})
+        _ -> error({'ct config entry missing', Key})
     end.
 
 -spec cfg(atom(), _, config()) -> config().
-
 cfg(Key, Value, Config) ->
     lists:keystore(Key, 1, Config, {Key, Value}).
 
 -type config_mut_fun() :: fun((config()) -> config()).
 
 -spec makeup_cfg([config_mut_fun()], config()) -> config().
-
 makeup_cfg(CMFs, C0) ->
-    lists:foldl(fun (CMF, C) -> CMF(C) end, C0, CMFs).
+    lists:foldl(fun(CMF, C) -> CMF(C) end, C0, CMFs).
 
 -spec woody_ctx() -> config_mut_fun().
-
 woody_ctx() ->
-    fun (C) -> cfg('$woody_ctx', construct_woody_ctx(C), C) end.
+    fun(C) -> cfg('$woody_ctx', construct_woody_ctx(C), C) end.
 
 construct_woody_ctx(C) ->
     woody_context:new(construct_rpc_id(get_test_case_name(C))).
@@ -75,47 +71,39 @@ construct_rpc_id(TestCaseName) ->
     ).
 
 -spec get_woody_ctx(config()) -> woody_context:ctx().
-
 get_woody_ctx(C) ->
     cfg('$woody_ctx', C).
 
 %%
 
 -spec test_case_name(test_case_name()) -> config_mut_fun().
-
 test_case_name(TestCaseName) ->
-    fun (C) -> cfg('$test_case_name', TestCaseName, C) end.
+    fun(C) -> cfg('$test_case_name', TestCaseName, C) end.
 
 -spec get_test_case_name(config()) -> test_case_name().
-
 get_test_case_name(C) ->
     cfg('$test_case_name', C).
 
 %
 
--spec init_suite(module(), config()) ->
-    config().
+-spec init_suite(module(), config()) -> config().
 init_suite(Module, Config) ->
     SupPid = start_mocked_service_sup(Module),
     Apps1 =
         start_app(scoper) ++
-        start_app(woody) ++
-        start_app({wapi, Config}),
+            start_app(woody) ++
+            start_app({wapi, Config}),
     [{apps, lists:reverse(Apps1)}, {suite_test_sup, SupPid} | Config].
 
--spec start_app(app_name()) ->
-    [app_name()].
-
+-spec start_app(app_name()) -> [app_name()].
 start_app(scoper = AppName) ->
     start_app_with(AppName, [
         {storage, scoper_storage_logger}
     ]);
-
 start_app(woody = AppName) ->
     start_app_with(AppName, [
         {acceptors_pool_size, 4}
     ]);
-
 start_app({wapi = AppName, Config}) ->
     start_app_with(AppName, [
         {ip, ?WAPI_IP},
@@ -146,7 +134,6 @@ start_app(AppName, Env) ->
     genlib_app:start_application_with(AppName, Env).
 
 -spec start_app_with(app_name(), app_env()) -> [app_name()].
-
 start_app_with(AppName, Env) ->
     _ = application:load(AppName),
     _ = set_app_env(AppName, Env),
@@ -159,7 +146,7 @@ start_app_with(AppName, Env) ->
 
 set_app_env(AppName, Env) ->
     lists:foreach(
-        fun ({K, V}) ->
+        fun({K, V}) ->
             ok = application:set_env(AppName, K, V)
         end,
         Env

@@ -9,15 +9,18 @@
 %% Context
 -type context() :: #{namespace() => md()}.
 -type namespace() :: binary().
--type md()        :: %% as stolen from `machinery_msgpack`
-    nil                |
-    boolean()          |
-    integer()          |
-    float()            |
-    binary()           | %% string
-    {binary, binary()} | %% binary
-    [md()]             |
-    #{md() => md()}    .
+%% as stolen from `machinery_msgpack`
+-type md() ::
+    nil
+    | boolean()
+    | integer()
+    | float()
+    %% string
+    | binary()
+    %% binary
+    | {binary, binary()}
+    | [md()]
+    | #{md() => md()}.
 
 -type handler_context() :: wapi_handler:context().
 -type id() :: binary().

@@ -254,7 +254,6 @@ unmarshal(
     });
 unmarshal(context, Context) ->
     wapi_codec:unmarshal(context, Context);
-
 unmarshal(T, V) ->
     wapi_codec:unmarshal(T, V).
 

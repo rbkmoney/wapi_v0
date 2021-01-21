@@ -104,24 +104,23 @@ groups() ->
 %%
 %% starting/stopping
 %%
--spec init_per_suite(config()) ->
-    config().
+-spec init_per_suite(config()) -> config().
 init_per_suite(C) ->
     wapi_ct_helper:init_suite(?MODULE, C).
 
 -spec end_per_suite(config()) -> _.
-
 end_per_suite(C) ->
     _ = wapi_ct_helper:stop_mocked_service_sup(?config(suite_test_sup, C)),
     _ = [application:stop(App) || App <- ?config(apps, C)],
     ok.
 
--spec init_per_group(group_name(), config()) ->
-    config().
+-spec init_per_group(group_name(), config()) -> config().
 init_per_group(Group, Config) when Group =:= base ->
-    ok = wapi_context:save(wapi_context:create(#{
-        woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
-    })),
+    ok = wapi_context:save(
+        wapi_context:create(#{
+            woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
+        })
+    ),
     Party = genlib:bsuuid(),
     BasePermissions = [
         {[party], read},
@@ -154,11 +153,9 @@ end_per_testcase(_Name, C) ->
     wapi_ct_helper:stop_mocked_service_sup(?config(test_sup, C)),
     ok.
 
-
 %%% Tests
 
--spec create_ok_test(config()) ->
-    _.
+-spec create_ok_test(config()) -> _.
 create_ok_test(C) ->
     create_ok_start_mocks(C),
     {ok, _} = create_p2p_transfer_call_api(C).
@@ -207,8 +204,7 @@ create_fail_resource_token_expire_test(C) ->
         create_p2p_transfer_call_api(C, ValidToken, InvalidToken)
     ).
 
--spec create_fail_unauthorized_test(config()) ->
-    _.
+-spec create_fail_unauthorized_test(config()) -> _.
 create_fail_unauthorized_test(C) ->
     WrongPartyID = <<"SomeWrongPartyID">>,
     create_ok_start_mocks(C, WrongPartyID),
@@ -217,8 +213,7 @@ create_fail_unauthorized_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_fail_identity_notfound_test(config()) ->
-    _.
+-spec create_fail_identity_notfound_test(config()) -> _.
 create_fail_identity_notfound_test(C) ->
     create_fail_start_mocks(C, fun() -> throw(#fistful_IdentityNotFound{}) end),
     ?assertEqual(
@@ -226,10 +221,9 @@ create_fail_identity_notfound_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_fail_forbidden_operation_currency_test(config()) ->
-    _.
+-spec create_fail_forbidden_operation_currency_test(config()) -> _.
 create_fail_forbidden_operation_currency_test(C) ->
-   ForbiddenOperationCurrencyException = #fistful_ForbiddenOperationCurrency{
+    ForbiddenOperationCurrencyException = #fistful_ForbiddenOperationCurrency{
         currency = #'CurrencyRef'{symbolic_code = ?USD},
         allowed_currencies = [
             #'CurrencyRef'{symbolic_code = ?RUB}
@@ -241,8 +235,7 @@ create_fail_forbidden_operation_currency_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_fail_forbidden_operation_amount_test(config()) ->
-    _.
+-spec create_fail_forbidden_operation_amount_test(config()) -> _.
 create_fail_forbidden_operation_amount_test(C) ->
     ForbiddenOperationAmountException = #fistful_ForbiddenOperationAmount{
         amount = ?CASH,
@@ -257,8 +250,7 @@ create_fail_forbidden_operation_amount_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_fail_operation_not_permitted_test(config()) ->
-    _.
+-spec create_fail_operation_not_permitted_test(config()) -> _.
 create_fail_operation_not_permitted_test(C) ->
     create_fail_start_mocks(C, fun() -> throw(#fistful_OperationNotPermitted{}) end),
     ?assertEqual(
@@ -266,8 +258,7 @@ create_fail_operation_not_permitted_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_fail_no_resource_info_test(config()) ->
-    _.
+-spec create_fail_no_resource_info_test(config()) -> _.
 create_fail_no_resource_info_test(C) ->
     NoResourceInfoException = #p2p_transfer_NoResourceInfo{
         type = sender
@@ -278,12 +269,11 @@ create_fail_no_resource_info_test(C) ->
         create_p2p_transfer_call_api(C)
     ).
 
--spec create_quote_ok_test(config()) ->
-    _.
+-spec create_quote_ok_test(config()) -> _.
 create_quote_ok_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
-    SenderToken   = store_bank_card(),
+    SenderToken = store_bank_card(),
     ReceiverToken = store_bank_card(),
     {ok, #{<<"token">> := Token}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
@@ -355,21 +345,25 @@ create_quote_fail_resource_token_expire_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID, ValidToken, InvalidToken)
     ).
 
--spec create_with_quote_token_ok_test(config()) ->
-    _.
+-spec create_with_quote_token_ok_test(config()) -> _.
 create_with_quote_token_ok_test(C) ->
     IdentityID = <<"id">>,
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_identity, fun('Get', _) -> {ok, ?IDENTITY(PartyID)};
-                              ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
-        {fistful_p2p_transfer, fun
-            ('GetQuote', _) -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)};
-            ('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)}
-        end}
-    ], C),
-    SenderToken   = store_bank_card(),
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_identity, fun
+                ('Get', _) -> {ok, ?IDENTITY(PartyID)};
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)}
+            end},
+            {fistful_p2p_transfer, fun
+                ('GetQuote', _) -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)};
+                ('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)}
+            end}
+        ],
+        C
+    ),
+    SenderToken = store_bank_card(),
     ReceiverToken = store_bank_card(),
     {ok, #{<<"token">> := QuoteToken}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
@@ -420,15 +414,15 @@ create_with_quote_token_ok_test(C) ->
         ?config(context, C)
     ).
 
--spec create_with_bad_quote_token_fail_test(config()) ->
-    _.
+-spec create_with_bad_quote_token_fail_test(config()) -> _.
 create_with_bad_quote_token_fail_test(C) ->
     create_ok_start_mocks(C),
-    SenderToken   = store_bank_card(),
+    SenderToken = store_bank_card(),
     ReceiverToken = store_bank_card(),
-    {error, {422, #{
-        <<"message">> := <<"Token can't be verified">>
-    }}} = call_api(
+    {error,
+        {422, #{
+            <<"message">> := <<"Token can't be verified">>
+        }}} = call_api(
         fun swag_client_wallet_p2_p_api:create_p2_p_transfer/3,
         #{
             body => #{
@@ -456,8 +450,7 @@ create_with_bad_quote_token_fail_test(C) ->
         ?config(context, C)
     ).
 
--spec get_quote_fail_identity_not_found_test(config()) ->
-    _.
+-spec get_quote_fail_identity_not_found_test(config()) -> _.
 get_quote_fail_identity_not_found_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> throw(#fistful_IdentityNotFound{}) end),
@@ -466,8 +459,7 @@ get_quote_fail_identity_not_found_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID)
     ).
 
--spec get_quote_fail_forbidden_operation_currency_test(config()) ->
-    _.
+-spec get_quote_fail_forbidden_operation_currency_test(config()) -> _.
 get_quote_fail_forbidden_operation_currency_test(C) ->
     ForbiddenOperationCurrencyException = #fistful_ForbiddenOperationCurrency{
         currency = #'CurrencyRef'{symbolic_code = ?USD},
@@ -482,8 +474,7 @@ get_quote_fail_forbidden_operation_currency_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID)
     ).
 
--spec get_quote_fail_forbidden_operation_amount_test(config()) ->
-    _.
+-spec get_quote_fail_forbidden_operation_amount_test(config()) -> _.
 get_quote_fail_forbidden_operation_amount_test(C) ->
     ForbiddenOperationAmountException = #fistful_ForbiddenOperationAmount{
         amount = ?CASH,
@@ -499,8 +490,7 @@ get_quote_fail_forbidden_operation_amount_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID)
     ).
 
--spec get_quote_fail_operation_not_permitted_test(config()) ->
-    _.
+-spec get_quote_fail_operation_not_permitted_test(config()) -> _.
 get_quote_fail_operation_not_permitted_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> throw(#fistful_OperationNotPermitted{}) end),
@@ -509,8 +499,7 @@ get_quote_fail_operation_not_permitted_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID)
     ).
 
--spec get_quote_fail_no_resource_info_test(config()) ->
-    _.
+-spec get_quote_fail_no_resource_info_test(config()) -> _.
 get_quote_fail_no_resource_info_test(C) ->
     NoResourceInfoException = #p2p_transfer_NoResourceInfo{
         type = sender
@@ -522,15 +511,13 @@ get_quote_fail_no_resource_info_test(C) ->
         quote_p2p_transfer_call_api(C, IdentityID)
     ).
 
--spec get_ok_test(config()) ->
-    _.
+-spec get_ok_test(config()) -> _.
 get_ok_test(C) ->
     PartyID = ?config(party, C),
     get_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER(PartyID)} end),
     {ok, _} = get_call_api(C).
 
--spec get_fail_p2p_notfound_test(config()) ->
-    _.
+-spec get_fail_p2p_notfound_test(config()) -> _.
 get_fail_p2p_notfound_test(C) ->
     get_start_mocks(C, fun() -> throw(#fistful_P2PNotFound{}) end),
     ?assertEqual(
@@ -565,18 +552,20 @@ get_events_ok(C) ->
     ?assertEqual(Limit * 2, erlang:length(Result)),
     [?assertMatch(#{<<"change">> := _}, Ev) || Ev <- Result].
 
--spec get_events_fail(config()) ->
-    _.
+-spec get_events_fail(config()) -> _.
 get_events_fail(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {fistful_p2p_transfer, fun
-            ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
-            ('Get', _) -> throw(#fistful_P2PNotFound{})
-        end}
-    ], C),
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_p2p_transfer, fun
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
+                ('Get', _) -> throw(#fistful_P2PNotFound{})
+            end}
+        ],
+        C
+    ),
 
-    ?assertMatch({error, {404, #{}}},  get_events_call_api(C)).
+    ?assertMatch({error, {404, #{}}}, get_events_call_api(C)).
 
 %%
 
@@ -666,43 +655,60 @@ create_ok_start_mocks(C) ->
 
 create_ok_start_mocks(C, ContextPartyID) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_identity, fun('Get', _) -> {ok, ?IDENTITY(PartyID)};
-                              ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(ContextPartyID)} end},
-        {fistful_p2p_transfer, fun('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)} end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_identity, fun
+                ('Get', _) -> {ok, ?IDENTITY(PartyID)};
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(ContextPartyID)}
+            end},
+            {fistful_p2p_transfer, fun('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)} end}
+        ],
+        C
+    ).
 
 create_fail_start_mocks(C, CreateResultFun) ->
     create_fail_start_mocks(C, ?config(party, C), CreateResultFun).
 
 create_fail_start_mocks(C, ContextPartyID, CreateResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_identity, fun('Get', _) -> {ok, ?IDENTITY(PartyID)};
-                              ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(ContextPartyID)} end},
-        {fistful_p2p_transfer, fun('Create', _) -> CreateResultFun() end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_identity, fun
+                ('Get', _) -> {ok, ?IDENTITY(PartyID)};
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(ContextPartyID)}
+            end},
+            {fistful_p2p_transfer, fun('Create', _) -> CreateResultFun() end}
+        ],
+        C
+    ).
 
 get_quote_start_mocks(C, GetQuoteResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {fistful_identity, fun('Get', _) -> {ok, ?IDENTITY(PartyID)};
-                              ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
-        {fistful_p2p_transfer, fun('GetQuote', _) -> GetQuoteResultFun() end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_identity, fun
+                ('Get', _) -> {ok, ?IDENTITY(PartyID)};
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)}
+            end},
+            {fistful_p2p_transfer, fun('GetQuote', _) -> GetQuoteResultFun() end}
+        ],
+        C
+    ).
 
 get_start_mocks(C, GetResultFun) ->
-    wapi_ct_helper:mock_services([
-        {fistful_p2p_transfer, fun('Get', _) -> GetResultFun() end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_p2p_transfer, fun('Get', _) -> GetResultFun() end}
+        ],
+        C
+    ).
 
 get_context(Endpoint, Token) ->
     wapi_client_lib:get_context(Endpoint, Token, 10000, ipv4).
 
--spec call_api(function(), map(), wapi_client_lib:context()) ->
-    {ok, term()} | {error, term()}.
+-spec call_api(function(), map(), wapi_client_lib:context()) -> {ok, term()} | {error, term()}.
 call_api(F, Params, Context) ->
     {Url, PreparedParams, Opts} = wapi_client_lib:make_request(Context, Params),
     Response = F(Url, PreparedParams, Opts),
@@ -710,5 +716,6 @@ call_api(F, Params, Context) ->
 
 store_bank_card() ->
     store_bank_card(undefined).
+
 store_bank_card(TokenDeadline) ->
     wapi_crypto:create_resource_token(?RESOURCE, TokenDeadline).

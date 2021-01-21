@@ -63,7 +63,6 @@ marshal(blocking, blocked) ->
     blocked;
 marshal(blocking, unblocked) ->
     unblocked;
-
 marshal(account_change, {created, Account}) ->
     {created, marshal(account, Account)};
 marshal(account, #{
@@ -179,7 +178,6 @@ marshal(sub_failure, Failure) ->
         code = marshal(string, wapi_failure:code(Failure)),
         sub = maybe_marshal(sub_failure, wapi_failure:sub_failure(Failure))
     };
-
 marshal(domain_revision, V) when is_integer(V) ->
     V;
 marshal(party_revision, V) when is_integer(V) ->
@@ -194,7 +192,6 @@ marshal(context, Ctx) when is_map(Ctx) ->
     maps:map(fun(_NS, V) -> marshal(msgpack, V) end, Ctx);
 marshal(msgpack, V) ->
     wapi_msgpack_codec:marshal(msgpack, V);
-
 % Catch this up in thrift validation
 marshal(_, Other) ->
     Other.
@@ -216,7 +213,6 @@ unmarshal(blocking, blocked) ->
     blocked;
 unmarshal(blocking, unblocked) ->
     unblocked;
-
 unmarshal(account_change, {created, Account}) ->
     {created, unmarshal(account, Account)};
 unmarshal(account, #'account_Account'{
@@ -310,14 +306,12 @@ unmarshal(cash, #'Cash'{
     currency = CurrencyRef
 }) ->
     {unmarshal(amount, Amount), unmarshal(currency_ref, CurrencyRef)};
-
 unmarshal(currency_ref, #'CurrencyRef'{
     symbolic_code = SymbolicCode
 }) ->
     unmarshal(string, SymbolicCode);
 unmarshal(amount, V) ->
     unmarshal(integer, V);
-
 unmarshal(failure, Failure) ->
     genlib_map:compact(#{
         code => unmarshal(string, Failure#'Failure'.code),
@@ -329,7 +323,6 @@ unmarshal(sub_failure, Failure) ->
         code => unmarshal(string, Failure#'SubFailure'.code),
         sub => maybe_unmarshal(sub_failure, Failure#'SubFailure'.sub)
     });
-
 unmarshal(domain_revision, V) when is_integer(V) ->
     V;
 unmarshal(party_revision, V) when is_integer(V) ->
@@ -338,13 +331,10 @@ unmarshal(string, V) when is_binary(V) ->
     V;
 unmarshal(integer, V) when is_integer(V) ->
     V;
-
 unmarshal(context, Ctx) when is_map(Ctx) ->
     maps:map(fun(_K, V) -> unmarshal(msgpack, V) end, Ctx);
-
 unmarshal(msgpack, V) ->
     wapi_msgpack_codec:unmarshal(msgpack, V);
-
 unmarshal(bool, V) when is_boolean(V) ->
     V.
 
@@ -360,9 +350,11 @@ maybe_marshal(Type, Value) ->
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+
 -spec test() -> _.
 
 -spec bank_card_codec_test() -> _.
+
 bank_card_codec_test() ->
     BankCard = #{
         token => <<"token">>,

@@ -58,31 +58,27 @@ all() ->
 -spec groups() -> [{group_name(), list(), [test_case_name()]}].
 groups() ->
     [
-        {base, [],
-            [
-                create_ok_test,
-                create_fail_unauthorized_wallet_test,
-                create_fail_wallet_notfound_test,
-                create_fail_invalid_operation_amount_test,
-                create_fail_forbidden_operation_currency_test,
-                create_fail_inconsistent_w2w_transfer_currency_test,
-                create_fail_wallet_inaccessible_test,
-                get_ok_test,
-                get_fail_w2w_notfound_test
-            ]
-        }
+        {base, [], [
+            create_ok_test,
+            create_fail_unauthorized_wallet_test,
+            create_fail_wallet_notfound_test,
+            create_fail_invalid_operation_amount_test,
+            create_fail_forbidden_operation_currency_test,
+            create_fail_inconsistent_w2w_transfer_currency_test,
+            create_fail_wallet_inaccessible_test,
+            get_ok_test,
+            get_fail_w2w_notfound_test
+        ]}
     ].
 
 %%
 %% starting/stopping
 %%
 -spec init_per_suite(config()) -> config().
-
 init_per_suite(C) ->
     wapi_ct_helper:init_suite(?MODULE, C).
 
 -spec end_per_suite(config()) -> _.
-
 end_per_suite(C) ->
     _ = wapi_ct_helper:stop_mocked_service_sup(?config(suite_test_sup, C)),
     _ = [application:stop(App) || App <- ?config(apps, C)],
@@ -90,9 +86,11 @@ end_per_suite(C) ->
 
 -spec init_per_group(group_name(), config()) -> config().
 init_per_group(Group, Config) when Group =:= base ->
-    ok = wapi_context:save(wapi_context:create(#{
-        woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
-    })),
+    ok = wapi_context:save(
+        wapi_context:create(#{
+            woody_context => woody_context:new(<<"init_per_group/", (atom_to_binary(Group, utf8))/binary>>)
+        })
+    ),
     Party = genlib:bsuuid(),
     {ok, Token} = wapi_ct_helper:issue_token(Party, [{[party], write}], unlimited, ?DOMAIN),
     Config1 = [{party, Party} | Config],
@@ -124,22 +122,23 @@ create_ok_test(C) ->
     create_w2_w_transfer_start_mocks(C, fun() -> {ok, ?W2W_TRANSFER(PartyID)} end),
     {ok, _} = create_w2_w_transfer_call_api(C).
 
--spec create_fail_unauthorized_wallet_test(config()) ->
-    _.
+-spec create_fail_unauthorized_wallet_test(config()) -> _.
 create_fail_unauthorized_wallet_test(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_wallet, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(<<"someotherparty">>)} end},
-        {fistful_w2w_transfer, fun('Create', _) -> {ok, ?W2W_TRANSFER(PartyID)} end}
-    ], C),
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_wallet, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(<<"someotherparty">>)} end},
+            {fistful_w2w_transfer, fun('Create', _) -> {ok, ?W2W_TRANSFER(PartyID)} end}
+        ],
+        C
+    ),
     ?assertEqual(
         {error, {422, #{<<"message">> => <<"No such wallet sender">>}}},
         create_w2_w_transfer_call_api(C)
     ).
 
--spec create_fail_wallet_notfound_test(config()) ->
-    _.
+-spec create_fail_wallet_notfound_test(config()) -> _.
 create_fail_wallet_notfound_test(C) ->
     WalletNotFoundException = #fistful_WalletNotFound{
         id = ?STRING
@@ -150,8 +149,7 @@ create_fail_wallet_notfound_test(C) ->
         create_w2_w_transfer_call_api(C)
     ).
 
--spec create_fail_invalid_operation_amount_test(config()) ->
-    _.
+-spec create_fail_invalid_operation_amount_test(config()) -> _.
 create_fail_invalid_operation_amount_test(C) ->
     InvalidOperationAmountException = #fistful_InvalidOperationAmount{
         amount = ?CASH
@@ -162,8 +160,7 @@ create_fail_invalid_operation_amount_test(C) ->
         create_w2_w_transfer_call_api(C)
     ).
 
--spec create_fail_forbidden_operation_currency_test(config()) ->
-    _.
+-spec create_fail_forbidden_operation_currency_test(config()) -> _.
 create_fail_forbidden_operation_currency_test(C) ->
     ForbiddenOperationCurrencyException = #fistful_ForbiddenOperationCurrency{
         currency = #'CurrencyRef'{symbolic_code = ?USD},
@@ -177,8 +174,7 @@ create_fail_forbidden_operation_currency_test(C) ->
         create_w2_w_transfer_call_api(C)
     ).
 
--spec create_fail_inconsistent_w2w_transfer_currency_test(config()) ->
-    _.
+-spec create_fail_inconsistent_w2w_transfer_currency_test(config()) -> _.
 create_fail_inconsistent_w2w_transfer_currency_test(C) ->
     InconsistentW2WCurrencyException = #w2w_transfer_InconsistentW2WTransferCurrency{
         w2w_transfer_currency = #'CurrencyRef'{
@@ -197,8 +193,7 @@ create_fail_inconsistent_w2w_transfer_currency_test(C) ->
         create_w2_w_transfer_call_api(C)
     ).
 
--spec create_fail_wallet_inaccessible_test(config()) ->
-    _.
+-spec create_fail_wallet_inaccessible_test(config()) -> _.
 create_fail_wallet_inaccessible_test(C) ->
     WalletInaccessibleException = #fistful_WalletInaccessible{
         id = ?STRING
@@ -209,15 +204,13 @@ create_fail_wallet_inaccessible_test(C) ->
         create_w2_w_transfer_call_api(C)
     ).
 
--spec get_ok_test(config()) ->
-    _.
+-spec get_ok_test(config()) -> _.
 get_ok_test(C) ->
     PartyID = ?config(party, C),
     get_w2_w_transfer_start_mocks(C, fun() -> {ok, ?W2W_TRANSFER(PartyID)} end),
     {ok, _} = get_w2_w_transfer_call_api(C).
 
--spec get_fail_w2w_notfound_test(config()) ->
-    _.
+-spec get_fail_w2w_notfound_test(config()) -> _.
 get_fail_w2w_notfound_test(C) ->
     get_w2_w_transfer_start_mocks(C, fun() -> throw(#fistful_W2WNotFound{}) end),
     ?assertMatch(
@@ -227,8 +220,7 @@ get_fail_w2w_notfound_test(C) ->
 
 %%
 
--spec call_api(function(), map(), wapi_client_lib:context()) ->
-    {ok, term()} | {error, term()}.
+-spec call_api(function(), map(), wapi_client_lib:context()) -> {ok, term()} | {error, term()}.
 call_api(F, Params, Context) ->
     {Url, PreparedParams, Opts} = wapi_client_lib:make_request(Context, Params),
     Response = F(Url, PreparedParams, Opts),
@@ -258,19 +250,24 @@ get_w2_w_transfer_call_api(C) ->
                 <<"w2wTransferID">> => ?STRING
             }
         },
-    wapi_ct_helper:cfg(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).
 
 create_w2_w_transfer_start_mocks(C, CreateResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
-        {fistful_wallet, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
-        {fistful_w2w_transfer, fun('Create', _) -> CreateResultFun() end}
-    ], C).
+    wapi_ct_helper:mock_services(
+        [
+            {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
+            {fistful_wallet, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
+            {fistful_w2w_transfer, fun('Create', _) -> CreateResultFun() end}
+        ],
+        C
+    ).
 
 get_w2_w_transfer_start_mocks(C, GetResultFun) ->
-    wapi_ct_helper:mock_services([
-        {fistful_w2w_transfer, fun('Get', _) -> GetResultFun() end}
-    ], C).
-
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_w2w_transfer, fun('Get', _) -> GetResultFun() end}
+        ],
+        C
+    ).
