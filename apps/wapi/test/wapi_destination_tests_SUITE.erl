@@ -354,25 +354,32 @@ call_api(F, Params, Context) ->
     Response = F(Url, PreparedParams, Opts),
     wapi_client_lib:handle_response(Response).
 
-build_destination_spec(D) ->
+build_destination_spec(D, undefined) ->
+    build_destination_spec(D, D#dst_DestinationState.resource);
+build_destination_spec(D, Resource) ->
     #{
         <<"name">> => D#dst_DestinationState.name,
         <<"identity">> => (D#dst_DestinationState.account)#account_Account.identity,
         <<"currency">> => ((D#dst_DestinationState.account)#account_Account.currency)#'CurrencyRef'.symbolic_code,
         <<"externalID">> => D#dst_DestinationState.external_id,
-        <<"resource">> => build_resource_spec(D#dst_DestinationState.resource)
+        <<"resource">> => build_resource_spec(Resource)
     }.
 
 build_resource_spec({bank_card, R}) ->
     #{
         <<"type">> => <<"BankCardDestinationResource">>,
-        <<"token">> => wapi_crypto:encrypt_bankcard_token(R#'ResourceBankCard'.bank_card)
+        <<"token">> => wapi_crypto:create_resource_token({bank_card, R#'ResourceBankCard'.bank_card}, undefined)
     };
 build_resource_spec({crypto_wallet, R}) ->
     Spec = build_crypto_cyrrency_spec((R#'ResourceCryptoWallet'.crypto_wallet)#'CryptoWallet'.data),
     Spec#{
         <<"type">> => <<"CryptoWalletDestinationResource">>,
         <<"id">> => (R#'ResourceCryptoWallet'.crypto_wallet)#'CryptoWallet'.id
+    };
+build_resource_spec(Token) ->
+    #{
+        <<"type">> => <<"BankCardDestinationResource">>,
+        <<"token">> => Token
     }.
 
 build_crypto_cyrrency_spec({bitcoin, #'CryptoDataBitcoin'{}}) ->
@@ -502,10 +509,13 @@ make_destination(C, ResourceType) ->
     ], C).
 
 create_destination_call_api(C, Destination) ->
+    create_destination_call_api(C, Destination, undefined).
+
+create_destination_call_api(C, Destination, Resource) ->
     call_api(
         fun swag_client_wallet_withdrawals_api:create_destination/3,
         #{
-            body => build_destination_spec(Destination)
+            body => build_destination_spec(Destination, Resource)
         },
         wapi_ct_helper:cfg(context, C)
     ).

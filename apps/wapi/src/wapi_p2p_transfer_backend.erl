@@ -32,11 +32,6 @@
     {p2p_transfer, unauthorized}
     | {p2p_transfer, notfound}.
 
--type error_get_events() ::
-    error_get()
-    | {token, {unsupported_version, _}}
-    | {token, {not_verified, _}}.
-
 -type error_get_events()
     :: error_get()
      | {token, {unsupported_version, _}}

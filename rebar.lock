@@ -1,4 +1,4 @@
-{"1.2.0",
+{"1.1.0",
 [{<<"accept">>,{pkg,<<"accept">>,<<"0.3.5">>},2},
  {<<"base64url">>,{pkg,<<"base64url">>,<<"0.0.1">>},0},
  {<<"bear">>,{pkg,<<"bear">>,<<"0.8.7">>},3},
@@ -9,6 +9,10 @@
  {<<"bender_proto">>,
   {git,"git@github.com:rbkmoney/bender-proto.git",
        {ref,"0d5813b8a25c8d03e4e59e42aa5f4e9b785a3849"}},
+  0},
+ {<<"binbase_proto">>,
+  {git,"git@github.com:rbkmoney/binbase-proto.git",
+       {ref,"711cc6337cf1deeb3b5a06528a5424f34ebede8e"}},
   0},
  {<<"cache">>,{pkg,<<"cache">>,<<"2.2.0">>},1},
  {<<"cds_proto">>,
@@ -115,6 +119,10 @@
   {git,"https://github.com/ndiezel0/erlang-libdecaf.git",
        {ref,"2e9175794945c1e19495cc7f52d823380d81cdb4"}},
   0},
+ {<<"logger_logstash_formatter">>,
+  {git,"git@github.com:rbkmoney/logger_logstash_formatter.git",
+       {ref,"87e52c755cf9e64d651e3ddddbfcd2ccd1db79db"}},
+  0},
  {<<"machinery">>,
   {git,"git@github.com:rbkmoney/machinery.git",
        {ref,"05a77b22c658c5c90d336d3e8c086380040a2ea3"}},
@@ -133,6 +141,10 @@
   {git,"https://github.com/uwiger/parse_trans.git",
        {ref,"76abb347c3c1d00fb0ccf9e4b43e22b3d2288484"}},
   0},
+ {<<"party_client">>,
+  {git,"git@github.com:rbkmoney/party_client_erlang.git",
+       {ref,"31defb8725a666198f98e50d9b4cbccd09676816"}},
+  0},
  {<<"payproc_errors">>,
   {git,"git@github.com:rbkmoney/payproc-errors-erlang.git",
        {ref,"9c16b1fc683f01a14fc50440365662dbc2036d38"}},
@@ -148,6 +160,10 @@
  {<<"scoper">>,
   {git,"git@github.com:rbkmoney/scoper.git",
        {ref,"89a973bf3cedc5a48c9fd89d719d25e79fe10027"}},
+  0},
+ {<<"shumpune_proto">>,
+  {git,"git@github.com:rbkmoney/shumpune-proto.git",
+       {ref,"4c87f03591cae3dad41504eb463d962af536b1ab"}},
   0},
  {<<"snowflake">>,
   {git,"https://github.com/rbkmoney/snowflake.git",
@@ -170,6 +186,10 @@
  {<<"woody">>,
   {git,"https://github.com/rbkmoney/woody_erlang.git",
        {ref,"58f56b462429ab1fee65e1bdb34b73512406ba00"}},
+  0},
+ {<<"woody_user_identity">>,
+  {git,"https://github.com/rbkmoney/woody_erlang_user_identity.git",
+       {ref,"a73d40b053bdb39a29fb879d47417eacafee5da5"}},
   0}]}.
 [
 {pkg_hash,[
@@ -192,6 +212,5 @@
  {<<"prometheus_httpd">>, <<"F616ED9B85B536B195D94104063025A91F904A4CFC20255363F49A197D96C896">>},
  {<<"ranch">>, <<"6B1FAB51B49196860B733A49C07604465A47BDB78AA10C1C16A3D199F7F8C881">>},
  {<<"ssl_verify_fun">>, <<"F0EAFFF810D2041E93F915EF59899C923F4568F4585904D010387ED74988E77B">>},
- {<<"unicode_util_compat">>, <<"D869E4C68901DD9531385BB0C8C40444EBF624E60B6962D95952775CAC5E90CD">>},
- {<<"uuid">>, <<"C5DF97D1A3D626235C2415E74053C47B2138BB863C5CD802AB5CAECB8ECC019F">>}]}
+ {<<"unicode_util_compat">>, <<"D869E4C68901DD9531385BB0C8C40444EBF624E60B6962D95952775CAC5E90CD">>}]}
 ].

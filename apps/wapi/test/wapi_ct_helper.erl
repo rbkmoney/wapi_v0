@@ -117,28 +117,24 @@ start_app(woody = AppName) ->
     ]);
 
 start_app({wapi = AppName, Config}) ->
-    JwkPath = get_keysource("jwk.json", Config),
     start_app_with(AppName, [
-        {ip, "::"},
-        {port, 8080},
+        {ip, ?WAPI_IP},
+        {port, ?WAPI_PORT},
         {realm, <<"external">>},
         {public_endpoint, <<"localhost:8080">>},
         {access_conf, #{
             jwt => #{
                 keyset => #{
-                    wapi     => {pem_file, get_keysource("private.pem", Config)}
+                    wapi => {pem_file, get_keysource("private.pem", Config)}
                 }
             }
         }},
-        {signee, wapi},
-        {lechiffre_opts,  #{
-            encryption_key_path => JwkPath,
-            decryption_key_paths => [JwkPath]
-        }},
-        {swagger_handler_opts, #{
-            validation_opts => #{
-                custom_validator => wapi_swagger_validator
-            }
+        {signee, ?SIGNEE},
+        {lechiffre_opts, #{
+            encryption_source => {json, {file, get_keysource("jwk.publ.json", Config)}},
+            decryption_sources => [
+                {json, {file, get_keysource("jwk.priv.json", Config)}}
+            ]
         }},
         {events_fetch_limit, 32}
     ]);
@@ -168,8 +164,6 @@ set_app_env(AppName, Env) ->
         end,
         Env
     ).
-
--spec get_keysource(_, config()) ->
 
 -spec get_keysource(_, config()) -> _.
 get_keysource(Key, Config) ->

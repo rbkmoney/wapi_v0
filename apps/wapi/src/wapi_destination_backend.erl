@@ -143,7 +143,7 @@ construct_resource(
                 currency => marshal_crypto_currency_data(Resource)
             })
         }},
-    {ok, ff_codec:marshal(resource, CostructedResource)}.
+    {ok, wapi_codec:marshal(resource, CostructedResource)}.
 
 tokenize_resource({bank_card, #'ResourceBankCard'{bank_card = BankCard}}) ->
     wapi_backend_utils:tokenize_resource({bank_card, BankCard});

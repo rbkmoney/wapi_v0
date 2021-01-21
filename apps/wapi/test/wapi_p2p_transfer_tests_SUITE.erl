@@ -167,7 +167,7 @@ create_ok_test(C) ->
 create_fail_resource_token_invalid_test(C) ->
     create_ok_start_mocks(C),
     InvalidToken = <<"v1.InvalidToken">>,
-    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidToken = store_bank_card(wapi_utils:deadline_from_timeout(100000)),
     ?assertMatch(
         {error,
             {400, #{
@@ -189,7 +189,7 @@ create_fail_resource_token_invalid_test(C) ->
 create_fail_resource_token_expire_test(C) ->
     create_ok_start_mocks(C),
     InvalidToken = store_bank_card(wapi_utils:deadline_from_timeout(0)),
-    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidToken = store_bank_card(wapi_utils:deadline_from_timeout(100000)),
     ?assertMatch(
         {error,
             {400, #{
@@ -206,7 +206,7 @@ create_fail_resource_token_expire_test(C) ->
             }}},
         create_p2p_transfer_call_api(C, ValidToken, InvalidToken)
     ).
-    
+
 -spec create_fail_unauthorized_test(config()) ->
     _.
 create_fail_unauthorized_test(C) ->
@@ -283,8 +283,8 @@ create_fail_no_resource_info_test(C) ->
 create_quote_ok_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
-    SenderToken   = ?TEST_PAYMENT_TOKEN,
-    ReceiverToken = ?TEST_PAYMENT_TOKEN,
+    SenderToken   = store_bank_card(),
+    ReceiverToken = store_bank_card(),
     {ok, #{<<"token">> := Token}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -314,7 +314,7 @@ create_quote_fail_resource_token_invalid_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
     InvalidToken = <<"v1.InvalidToken">>,
-    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidToken = store_bank_card(wapi_utils:deadline_from_timeout(100000)),
     ?assertMatch(
         {error,
             {400, #{
@@ -337,7 +337,7 @@ create_quote_fail_resource_token_expire_test(C) ->
     IdentityID = <<"id">>,
     get_quote_start_mocks(C, fun() -> {ok, ?P2P_TRANSFER_QUOTE(IdentityID)} end),
     InvalidToken = store_bank_card(wapi_utils:deadline_from_timeout(0)),
-    ValidToken = store_bank_card(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidToken = store_bank_card(wapi_utils:deadline_from_timeout(100000)),
     ?assertMatch(
         {error,
             {400, #{
@@ -354,7 +354,7 @@ create_quote_fail_resource_token_expire_test(C) ->
             }}},
         quote_p2p_transfer_call_api(C, IdentityID, ValidToken, InvalidToken)
     ).
-   
+
 -spec create_with_quote_token_ok_test(config()) ->
     _.
 create_with_quote_token_ok_test(C) ->
@@ -369,8 +369,8 @@ create_with_quote_token_ok_test(C) ->
             ('Create', _) -> {ok, ?P2P_TRANSFER(PartyID)}
         end}
     ], C),
-    SenderToken   = ?TEST_PAYMENT_TOKEN,
-    ReceiverToken = ?TEST_PAYMENT_TOKEN,
+    SenderToken   = store_bank_card(),
+    ReceiverToken = store_bank_card(),
     {ok, #{<<"token">> := QuoteToken}} = call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -424,8 +424,8 @@ create_with_quote_token_ok_test(C) ->
     _.
 create_with_bad_quote_token_fail_test(C) ->
     create_ok_start_mocks(C),
-    SenderToken   = ?TEST_PAYMENT_TOKEN,
-    ReceiverToken = ?TEST_PAYMENT_TOKEN,
+    SenderToken   = store_bank_card(),
+    ReceiverToken = store_bank_card(),
     {error, {422, #{
         <<"message">> := <<"Token can't be verified">>
     }}} = call_api(
@@ -538,28 +538,32 @@ get_fail_p2p_notfound_test(C) ->
         get_call_api(C)
     ).
 
--spec get_events_ok(config()) ->
-    _.
+-spec get_events_ok(config()) -> _.
 get_events_ok(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper:mock_services([
-        {fistful_p2p_transfer, fun
-            ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
-            ('Get', _) -> {ok, ?P2P_TRANSFER_SESSIONS(PartyID)};
-            ('GetEvents', [_ID, #'EventRange'{limit = Limit}]) ->
-                {ok, [?P2P_TRANSFER_EVENT(EventID) || EventID <- lists:seq(1, Limit)]}
-        end},
-        {fistful_p2p_session, fun('GetEvents', [_ID, #'EventRange'{limit = Limit}]) ->
-            {ok, [?P2P_SESSION_EVENT(EventID) || EventID <- lists:seq(1, Limit)]}
-        end}
-    ], C),
+    wapi_ct_helper:mock_services(
+        [
+            {fistful_p2p_transfer, fun
+                ('GetContext', _) ->
+                    {ok, ?DEFAULT_CONTEXT(PartyID)};
+                ('Get', _) ->
+                    {ok, ?P2P_TRANSFER_SESSIONS(PartyID)};
+                ('GetEvents', {_ID, #'EventRange'{limit = Limit}}) ->
+                    {ok, [?P2P_TRANSFER_EVENT(EventID) || EventID <- lists:seq(1, Limit)]}
+            end},
+            {fistful_p2p_session, fun('GetEvents', {_ID, #'EventRange'{limit = Limit}}) ->
+                {ok, [?P2P_SESSION_EVENT(EventID) || EventID <- lists:seq(1, Limit)]}
+            end}
+        ],
+        C
+    ),
 
     {ok, #{<<"result">> := Result}} = get_events_call_api(C),
 
     % Limit is multiplied by two because the selection occurs twice - from session and transfer.
     {ok, Limit} = application:get_env(wapi, events_fetch_limit),
     ?assertEqual(Limit * 2, erlang:length(Result)),
-    [?assertMatch(#{<<"change">> := _}, Ev) || Ev <-  Result].
+    [?assertMatch(#{<<"change">> := _}, Ev) || Ev <- Result].
 
 -spec get_events_fail(config()) ->
     _.
@@ -588,8 +592,10 @@ get_events_call_api(C) ->
     ).
 
 create_p2p_transfer_call_api(C) ->
-    SenderToken   = ?TEST_PAYMENT_TOKEN,
-    ReceiverToken = ?TEST_PAYMENT_TOKEN,
+    ValidToken = store_bank_card(),
+    create_p2p_transfer_call_api(C, ValidToken, ValidToken).
+
+create_p2p_transfer_call_api(C, SenderToken, ReceiverToken) ->
     call_api(
         fun swag_client_wallet_p2_p_api:create_p2_p_transfer/3,
         #{
@@ -618,8 +624,10 @@ create_p2p_transfer_call_api(C) ->
     ).
 
 quote_p2p_transfer_call_api(C, IdentityID) ->
-    SenderToken   = ?TEST_PAYMENT_TOKEN,
-    ReceiverToken = ?TEST_PAYMENT_TOKEN,
+    ValidToken = store_bank_card(),
+    quote_p2p_transfer_call_api(C, IdentityID, ValidToken, ValidToken).
+
+quote_p2p_transfer_call_api(C, IdentityID, SenderToken, ReceiverToken) ->
     call_api(
         fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
         #{
@@ -639,7 +647,7 @@ quote_p2p_transfer_call_api(C, IdentityID) ->
                 }
             }
         },
-        ?config(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).
 
 get_call_api(C) ->
@@ -699,3 +707,8 @@ call_api(F, Params, Context) ->
     {Url, PreparedParams, Opts} = wapi_client_lib:make_request(Context, Params),
     Response = F(Url, PreparedParams, Opts),
     wapi_client_lib:handle_response(Response).
+
+store_bank_card() ->
+    store_bank_card(undefined).
+store_bank_card(TokenDeadline) ->
+    wapi_crypto:create_resource_token(?RESOURCE, TokenDeadline).

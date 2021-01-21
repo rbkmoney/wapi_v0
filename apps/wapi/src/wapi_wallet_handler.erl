@@ -332,10 +332,10 @@ process_request('CreateDestination', #{'Destination' := Params}, Context, Opts) 
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Identity inaccessible">>));
         {error, {external_id_conflict, {ID, ExternalID}}} ->
             wapi_handler_utils:logic_error(external_id_conflict, {ID, ExternalID});
-        {error, invalid_resource_token} ->
+        {error, {invalid_resource_token, Type}} ->
             wapi_handler_utils:reply_error(400, #{
-                <<"errorType">>   => <<"InvalidResourceToken">>,
-                <<"name">>        => <<"BankCardDestinationResource">>,
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
                 <<"description">> => <<"Specified resource token is invalid">>
             })
     end;
@@ -597,6 +597,12 @@ process_request('QuoteP2PTransfer', #{'QuoteParameters':= Params}, Context, _Opt
         {error, {identity, unauthorized}} ->
             wapi_handler_utils:reply_ok(422,
                 wapi_handler_utils:get_error_msg(<<"No such identity">>));
+        {error, {_, {invalid_resource_token, Type}}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
+                <<"description">> => <<"Specified resource token is invalid">>
+            });
         {error, {sender, invalid_resource}} ->
             wapi_handler_utils:reply_ok(422,
                 wapi_handler_utils:get_error_msg(<<"Invalid sender resource">>));
@@ -626,6 +632,12 @@ process_request('CreateP2PTransfer', #{'P2PTransferParameters' := Params}, Conte
         {error, {identity, unauthorized}} ->
             wapi_handler_utils:reply_ok(422,
                 wapi_handler_utils:get_error_msg(<<"No such identity">>));
+        {error, {_, {invalid_resource_token, Type}}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
+                <<"description">> => <<"Specified resource token is invalid">>
+            });
         {error, {sender, invalid_resource}} ->
             wapi_handler_utils:reply_ok(422,
                 wapi_handler_utils:get_error_msg(<<"Invalid sender resource">>));
@@ -683,21 +695,24 @@ process_request('GetP2PTransferEvents', #{p2pTransferID := ID, continuationToken
 
 process_request('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' := Params}, Context, Opts) ->
     case wapi_p2p_template_backend:create(Params, Context) of
-        {ok, P2PTemplate  = #{<<"id">> := TemplateID} } ->
-            wapi_handler_utils:reply_ok(201, P2PTemplate,
-                get_location('GetP2PTransferTemplateByID', [TemplateID], Opts));
+        {ok, P2PTemplate = #{<<"id">> := TemplateID}} ->
+            wapi_handler_utils:reply_ok(
+                201,
+                P2PTemplate,
+                get_location('GetP2PTransferTemplateByID', [TemplateID], Opts)
+            );
         {error, {identity, unauthorized}} ->
             wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"No such identity">>));
         {error, {identity, notfound}} ->
             wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"No such identity">>));
+        {error, inaccessible} ->
+            wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Identity inaccessible">>));
+        {error, {external_id_conflict, ID, ExternalID}} ->
+            wapi_handler_utils:logic_error(external_id_conflict, {ID, ExternalID});
         {error, {currency, notfound}} ->
             wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Currency not supported">>));
         {error, invalid_operation_amount} ->
-            wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Invalid operation amount">>));
-        {error, inaccessible} ->
-            wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Identity inaccessible">>));
-        {error, {external_id_conflict, ID}} ->
-                wapi_handler_utils:reply_error(409, #{<<"id">> => ID})
+            wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Invalid operation amount">>))
     end;
 process_request('GetP2PTransferTemplateByID', #{'p2pTransferTemplateID' := P2PTemplateID}, Context, _Opts) ->
     case wapi_p2p_template_backend:get(P2PTemplateID, Context) of
@@ -768,7 +783,13 @@ process_request('QuoteP2PTransferWithTemplate', #{
         {error, {operation_not_permitted, Details}} ->
             wapi_handler_utils:reply_error(422,
                 wapi_handler_utils:get_error_msg(Details));
-        {error, {invalid_resource, Type}} ->
+        {error, {_, {invalid_resource_token, Type}}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
+                <<"description">> => <<"Specified resource token is invalid">>
+            });
+        {error, {Type, invalid_resource}} ->
             wapi_handler_utils:reply_error(400, #{
                 <<"errorType">> => <<"InvalidResourceToken">>,
                 <<"name">> => Type,
@@ -795,7 +816,13 @@ process_request('CreateP2PTransferWithTemplate', #{
         {error, {operation_not_permitted, Details}} ->
             wapi_handler_utils:reply_error(422,
                 wapi_handler_utils:get_error_msg(Details));
-        {error, {invalid_resource, Type}} ->
+        {error, {_, {invalid_resource_token, Type}}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidResourceToken">>,
+                <<"name">> => Type,
+                <<"description">> => <<"Specified resource token is invalid">>
+            });
+        {error, {Type, invalid_resource}} ->
             wapi_handler_utils:reply_error(400, #{
                 <<"errorType">> => <<"InvalidResourceToken">>,
                 <<"name">> => Type,

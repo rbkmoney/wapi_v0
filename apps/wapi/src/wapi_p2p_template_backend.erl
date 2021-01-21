@@ -8,7 +8,7 @@
 -export([quote_transfer/3]).
 -export([create_transfer/3]).
 
--import(ff_pipeline, [do/1, unwrap/1, unwrap/2]).
+-import(wapi_pipeline, [do/1, unwrap/1, unwrap/2]).
 
 -include_lib("fistful_proto/include/ff_proto_base_thrift.hrl").
 -include_lib("fistful_proto/include/ff_proto_p2p_transfer_thrift.hrl").
