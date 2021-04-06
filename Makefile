@@ -58,12 +58,6 @@ check_format:
 format:
 	$(REBAR) fmt -w
 
-check_format:
-	$(REBAR) fmt -c
-
-format:
-	$(REBAR) fmt -w
-
 dialyze: submodules generate
 	$(REBAR) dialyzer
 
