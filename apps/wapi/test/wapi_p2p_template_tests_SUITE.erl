@@ -50,7 +50,7 @@ init([]) ->
 
 %% Configure tests
 
--spec all() -> [test_case_name()].
+-spec all() -> [{group, test_case_name()}].
 all() ->
     [
         {group, base}

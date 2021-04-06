@@ -530,11 +530,6 @@ maybe_marshal(_, undefined) ->
 maybe_marshal(T, V) ->
     marshal(T, V).
 
-maybe_marshal(_, undefined) ->
-    undefined;
-maybe_marshal(T, V) ->
-    marshal(T, V).
-
 %% Unmarshal
 
 unmarshal_quote(#p2p_transfer_Quote{
