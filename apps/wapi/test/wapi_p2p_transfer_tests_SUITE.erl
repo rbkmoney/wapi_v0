@@ -365,33 +365,7 @@ create_with_quote_token_ok_test(C) ->
     ),
     SenderToken = store_bank_card(),
     ReceiverToken = store_bank_card(),
-    {ok, #{<<"token">> := QuoteToken}} = call_api(
-        fun swag_client_wallet_p2_p_api:quote_p2_p_transfer/3,
-        #{
-            body => #{
-                <<"identityID">> => IdentityID,
-                <<"body">> => #{
-                    <<"amount">> => ?INTEGER,
-                    <<"currency">> => ?RUB
-                },
-                <<"sender">> => #{
-                    <<"type">> => <<"BankCardSenderResourceParams">>,
-                    <<"token">> => SenderToken,
-                    <<"authData">> => <<"session id">>
-                },
-                <<"quoteToken">> => QuoteToken,
-                <<"receiver">> => #{
-                    <<"type">> => <<"BankCardReceiverResourceParams">>,
-                    <<"token">> => ReceiverToken
-                },
-                <<"contactInfo">> => #{
-                    <<"email">> => <<"some@mail.com">>,
-                    <<"phoneNumber">> => <<"+79990000101">>
-                }
-            }
-        },
-        ?config(context, C)
-    ),
+    {ok, #{<<"token">> := QuoteToken}} = quote_p2p_transfer_call_api(C, IdentityID),
     {ok, _} = call_api(
         fun swag_client_wallet_p2_p_api:create_p2_p_transfer/3,
         #{

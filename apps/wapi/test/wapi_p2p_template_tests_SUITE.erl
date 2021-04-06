@@ -116,7 +116,7 @@ init_per_testcase(Name, C) ->
 
 -spec end_per_testcase(test_case_name(), config()) -> _.
 end_per_testcase(_Name, C) ->
-    ok = ct_helper:unset_context(),
+    ok = wapi_context:cleanup(),
     _ = wapi_ct_helper:stop_mocked_service_sup(?config(test_sup, C)),
     ok.
 
@@ -302,7 +302,7 @@ quote_transfer_fail_resource_token_invalid_test(C) ->
         C
     ),
     InvalidResourceToken = <<"v1.InvalidResourceToken">>,
-    ValidResourceToken = create_card_token(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidResourceToken = create_card_token(),
     ?assertMatch(
         {error,
             {400, #{
@@ -330,7 +330,7 @@ quote_transfer_fail_resource_token_expire_test(C) ->
         C
     ),
     InvalidResourceToken = create_card_token(wapi_utils:deadline_from_timeout(0)),
-    ValidResourceToken = create_card_token(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidResourceToken = create_card_token(),
     ?assertMatch(
         {error,
             {400, #{
@@ -384,7 +384,7 @@ create_transfer_fail_resource_token_invalid_test(C) ->
     TemplateToken = create_template_token(PartyID, ValidUntil),
     Ticket = create_transfer_ticket(TemplateToken),
     InvalidResourceToken = <<"v1.InvalidResourceToken">>,
-    ValidResourceToken = create_card_token(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidResourceToken = create_card_token(),
     ?assertMatch(
         {error,
             {400, #{
@@ -419,7 +419,7 @@ create_transfer_fail_resource_token_expire_test(C) ->
     TemplateToken = create_template_token(PartyID, ValidUntil),
     Ticket = create_transfer_ticket(TemplateToken),
     InvalidResourceToken = create_card_token(wapi_utils:deadline_from_timeout(0)),
-    ValidResourceToken = create_card_token(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ValidResourceToken = create_card_token(),
     ?assertMatch(
         {error,
             {400, #{
@@ -438,6 +438,8 @@ create_transfer_fail_resource_token_expire_test(C) ->
     ).
 
 %% Utility
+quote_p2p_transfer_with_template_call_api(C) ->
+    quote_p2p_transfer_with_template_call_api(C, create_card_token(), create_card_token()).
 
 quote_p2p_transfer_with_template_call_api(C, SenderToken, ReceiverToken) ->
     call_api(
@@ -461,15 +463,15 @@ quote_p2p_transfer_with_template_call_api(C, SenderToken, ReceiverToken) ->
                 }
             }
         },
-        ct_helper:cfg(context, C)
+        wapi_ct_helper:cfg(context, C)
     ).
 
 create_p2p_transfer_with_template_call_api(C, Ticket) ->
-    ResourceToken = create_card_token(C, <<"4150399999000900">>, <<"12/2025">>, <<"Buka Bjaka">>),
+    ResourceToken = create_card_token(),
     create_p2p_transfer_with_template_call_api(C, Ticket, ResourceToken, ResourceToken).
 
 create_p2p_transfer_with_template_call_api(C, Ticket, SenderToken, ReceiverToken) ->
-    Context = maps:merge(ct_helper:cfg(context, C), #{token => Ticket}),
+    Context = maps:merge(wapi_ct_helper:cfg(context, C), #{token => Ticket}),
     call_api(
         fun swag_client_wallet_p2_p_templates_api:create_p2_p_transfer_with_template/3,
         #{
@@ -534,18 +536,3 @@ create_card_token() ->
 
 create_card_token(TokenDeadline) ->
     wapi_crypto:create_resource_token(?RESOURCE, TokenDeadline).
-
-create_card_token(C, Pan, ExpDate, CardHolder) ->
-    {ok, Res} = call_api(
-        fun swag_client_payres_payment_resources_api:store_bank_card/3,
-        #{
-            body => genlib_map:compact(#{
-                <<"type">> => <<"BankCard">>,
-                <<"cardNumber">> => Pan,
-                <<"expDate">> => ExpDate,
-                <<"cardHolder">> => CardHolder
-            })
-        },
-        ct_helper:cfg(context_pcidss, C)
-    ),
-    maps:get(<<"token">>, Res).

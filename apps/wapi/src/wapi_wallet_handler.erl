@@ -595,6 +595,36 @@ process_request('ListDeposits', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
+process_request('ListDepositReverts', Params, Context, _Opts) ->
+    case wapi_stat_backend:list_deposit_reverts(Params, Context) of
+        {ok, List} ->
+            wapi_handler_utils:reply_ok(200, List);
+        {error, {invalid, Errors}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"NoMatch">>,
+                <<"description">> => Errors
+            });
+        {error, {bad_token, Reason}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidToken">>,
+                <<"description">> => Reason
+            })
+    end;
+process_request('ListDepositAdjustments', Params, Context, _Opts) ->
+    case wapi_stat_backend:list_deposit_adjustments(Params, Context) of
+        {ok, List} ->
+            wapi_handler_utils:reply_ok(200, List);
+        {error, {invalid, Errors}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"NoMatch">>,
+                <<"description">> => Errors
+            });
+        {error, {bad_token, Reason}} ->
+            wapi_handler_utils:reply_error(400, #{
+                <<"errorType">> => <<"InvalidToken">>,
+                <<"description">> => Reason
+            })
+    end;
 %% W2W
 
 process_request('CreateW2WTransfer', #{'W2WTransferParameters' := Params}, Context, _Opts) ->
