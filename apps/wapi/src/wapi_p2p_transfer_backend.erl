@@ -897,14 +897,14 @@ unmarshal_events_test_() ->
 
     EvList = [
         E
-        || Type <- [Form(), get_request],
-           Change <- [UIChangePayload(UIRedirect(Request(Type))), pending, succeeded],
-           E <- [Event(EventChange(Change))]
+     || Type <- [Form(), get_request],
+        Change <- [UIChangePayload(UIRedirect(Request(Type))), pending, succeeded],
+        E <- [Event(EventChange(Change))]
     ],
 
     [
         ?_assertEqual(ExpectedSwag, Unmarshal(Woody))
-        || {Unmarshal, Woody, ExpectedSwag} <- [Events(EvList) | EvList]
+     || {Unmarshal, Woody, ExpectedSwag} <- [Events(EvList) | EvList]
     ].
 
 -spec events_collect_test_() -> _.
