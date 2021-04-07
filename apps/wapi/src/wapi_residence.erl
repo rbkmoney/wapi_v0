@@ -4,7 +4,7 @@
 
 -export([get/1]).
 
--type id() :: dmsl_domain_thrift:'Residence'().
+-type id() :: binary().
 -type residence() :: #{
     id := id(),
     name := binary(),
