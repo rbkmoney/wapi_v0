@@ -16,27 +16,15 @@
 
 %%
 
--spec get(id()) -> response_data().
+-spec get(id()) -> {ok, response_data()} | {error, notfound}.
 get(ID) ->
-    get_residence(marshal(residence, ID)).
+    get_residence(genlib_string:to_lower(ID)).
 
-get_residence(ID = 'rus') ->
+get_residence(ID = <<"rus">>) ->
     {ok, #{
-        <<"id">> => genlib_string:to_upper(genlib:to_binary(ID)),
+        <<"id">> => genlib_string:to_upper(ID),
         <<"name">> => <<"Российская федерация"/utf8>>,
         <<"flag">> => <<"🇷🇺"/utf8>>
     }};
 get_residence(_) ->
     {error, notfound}.
-
-%% Marshaling
-
-marshal(residence, V) ->
-    try
-        erlang:binary_to_existing_atom(genlib_string:to_lower(V), latin1)
-    catch
-        error:badarg ->
-            % TODO
-            %  - Essentially this is incorrect, we should reply with 400 instead
-            undefined
-    end.

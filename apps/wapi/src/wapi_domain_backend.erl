@@ -25,7 +25,7 @@
 
 %%
 
--spec get_currency(id()) -> response_data().
+-spec get_currency(id()) -> {ok, response_data()} | {error, notfound}.
 get_currency(ID) ->
     do(fun() ->
         Currency = unwrap(
