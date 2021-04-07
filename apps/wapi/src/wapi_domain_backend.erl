@@ -42,7 +42,6 @@ get_currency(ID) ->
         }
     end).
 
-
 %%
 %% Internal
 %%

@@ -1140,7 +1140,6 @@ process_request('DownloadFile', #{fileID := FileId}, Context, _Opts) ->
         {error, notfound} ->
             wapi_handler_utils:reply_ok(404)
     end;
-
 %% Residences
 process_request('GetResidence', #{'residence' := ResidenceId}, _Context, _Opts) ->
     case wapi_residence:get(ResidenceId) of
