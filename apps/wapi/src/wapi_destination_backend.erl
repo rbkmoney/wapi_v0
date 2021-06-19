@@ -143,7 +143,21 @@ construct_resource(
                 currency => marshal_crypto_currency_data(Resource)
             })
         }},
-    {ok, wapi_codec:marshal(resource, CostructedResource)}.
+    {ok, wapi_codec:marshal(resource, CostructedResource)};
+construct_resource(
+    #{
+        <<"type">> := <<"DigitalWalletDestinationResource">>,
+        <<"id">> := DigitalWalletID
+    } = Resource
+) ->
+    ConstructedResource =
+        {digital_wallet, #{
+            digital_wallet => genlib_map:compact(#{
+                id => DigitalWalletID,
+                data => marshal_digital_wallet_data(Resource)
+            })
+        }},
+    {ok, wapi_codec:marshal(resource, ConstructedResource)}.
 
 tokenize_resource({bank_card, #'ResourceBankCard'{bank_card = BankCard}}) ->
     wapi_backend_utils:tokenize_resource({bank_card, BankCard});
@@ -252,6 +266,20 @@ unmarshal(
         <<"currency">> => Currency,
         <<"tag">> => genlib_map:get(tag, Params)
     });
+unmarshal(
+    resource,
+    {digital_wallet, #'ResourceDigitalWallet'{
+        digital_wallet = #'DigitalWallet'{
+            id = DigitalWalletID,
+            data = Data
+        }
+    }}
+) ->
+    genlib_map:compact(#{
+        <<"type">> => <<"CryptoWalletDestinationResource">>,
+        <<"id">> => unmarshal(string, DigitalWalletID),
+        <<"provider">> => unmarshal_digital_wallet_data(Data)
+    });
 unmarshal(context, Context) ->
     wapi_codec:unmarshal(context, Context);
 unmarshal(T, V) ->
@@ -303,3 +331,21 @@ unmarshal_crypto_currency_params(ripple, #'CryptoDataRipple'{tag = Tag}) ->
     });
 unmarshal_crypto_currency_params(_Other, _Params) ->
     #{}.
+
+marshal_digital_wallet_data(Resource) ->
+    Provider = maps:get(<<"provider">>, Resource, undefined),
+    {marshal_digital_wallet_provider(Provider), #'DigitalDataWebmoney'{}}.
+
+unmarshal_digital_wallet_data(undefined) ->
+    undefined;
+unmarshal_digital_wallet_data({Name, #'DigitalDataWebmoney'{}}) ->
+    unmarshal_digital_wallet_provider_name(Name).
+
+marshal_digital_wallet_provider(undefined) ->
+    undefined;
+marshal_digital_wallet_provider(Provider) ->
+    marshal_digital_wallet_provider_name(Provider).
+
+marshal_digital_wallet_provider_name(<<"Webmoney">>) -> webmoney.
+
+unmarshal_digital_wallet_provider_name(webmoney) -> <<"Webmoney">>.
