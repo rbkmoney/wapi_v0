@@ -276,7 +276,7 @@ unmarshal(
     }}
 ) ->
     genlib_map:compact(#{
-        <<"type">> => <<"CryptoWalletDestinationResource">>,
+        <<"type">> => <<"DigitalWalletDestinationResource">>,
         <<"id">> => unmarshal(string, DigitalWalletID),
         <<"provider">> => unmarshal_digital_wallet_data(Data)
     });
