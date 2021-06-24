@@ -126,14 +126,10 @@ marshal(crypto_wallet, #{id := ID, currency := Currency}) ->
         currency = marshal(crypto_currency, Currency),
         data = marshal(crypto_data, Currency)
     };
-marshal(digital_wallet, #{id := ID, data := Data}) ->
+marshal(digital_wallet, Wallet = #{id := ID}) ->
     #'DigitalWallet'{
         id = marshal(string, ID),
-        data = marshal(digital_data, Data)
-    };
-marshal(digital_wallet, #{id := ID}) ->
-    #'DigitalWallet'{
-        id = marshal(string, ID)
+        data = maybe_marshal(digital_data, maps:get(data, Wallet, undefined))
     };
 marshal(exp_date, {Month, Year}) ->
     #'BankCardExpDate'{
