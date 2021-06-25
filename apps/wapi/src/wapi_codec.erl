@@ -120,16 +120,16 @@ marshal(bank_card_auth_data, {session, #{session_id := ID}}) ->
     {session_data, #'SessionAuthData'{
         id = marshal(string, ID)
     }};
-marshal(crypto_wallet, #{id := ID, currency := Currency}) ->
+marshal(crypto_wallet, #{id := ID, data := Data}) ->
     #'CryptoWallet'{
         id = marshal(string, ID),
-        currency = marshal(crypto_currency, Currency),
-        data = marshal(crypto_data, Currency)
+        data = marshal(crypto_data, Data),
+        currency = marshal(crypto_currency, Data)
     };
-marshal(digital_wallet, Wallet = #{id := ID}) ->
+marshal(digital_wallet, #{id := ID, data := Data}) ->
     #'DigitalWallet'{
         id = marshal(string, ID),
-        data = maybe_marshal(digital_data, maps:get(data, Wallet, undefined))
+        data = marshal(digital_data, Data)
     };
 marshal(exp_date, {Month, Year}) ->
     #'BankCardExpDate'{

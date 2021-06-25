@@ -138,10 +138,10 @@ construct_resource(
 ) ->
     CostructedResource =
         {crypto_wallet, #{
-            crypto_wallet => genlib_map:compact(#{
+            crypto_wallet => #{
                 id => CryptoWalletID,
-                currency => marshal_crypto_currency_data(Resource)
-            })
+                data => marshal_crypto_currency_data(Resource)
+            }
         }},
     {ok, wapi_codec:marshal(resource, CostructedResource)};
 construct_resource(
@@ -152,10 +152,10 @@ construct_resource(
 ) ->
     ConstructedResource =
         {digital_wallet, #{
-            digital_wallet => genlib_map:compact(#{
+            digital_wallet => #{
                 id => DigitalWalletID,
                 data => marshal_digital_wallet_data(Resource)
-            })
+            }
         }},
     {ok, wapi_codec:marshal(resource, ConstructedResource)}.
 
@@ -275,11 +275,11 @@ unmarshal(
         }
     }}
 ) ->
-    genlib_map:compact(#{
+    #{
         <<"type">> => <<"DigitalWalletDestinationResource">>,
         <<"id">> => unmarshal(string, DigitalWalletID),
         <<"provider">> => unmarshal_digital_wallet_data(Data)
-    });
+    };
 unmarshal(context, Context) ->
     wapi_codec:unmarshal(context, Context);
 unmarshal(T, V) ->
@@ -333,19 +333,12 @@ unmarshal_crypto_currency_params(_Other, _Params) ->
     #{}.
 
 marshal_digital_wallet_data(Resource) ->
-    Provider = maps:get(<<"provider">>, Resource, undefined),
-    {marshal_digital_wallet_provider(Provider), #'DigitalDataWebmoney'{}}.
+    #{
+        <<"provider">> := Provider
+    } = Resource,
+    marshal_digital_wallet_provider(Provider).
 
-unmarshal_digital_wallet_data(undefined) ->
-    undefined;
-unmarshal_digital_wallet_data({Name, #'DigitalDataWebmoney'{}}) ->
-    unmarshal_digital_wallet_provider_name(Name).
+unmarshal_digital_wallet_data({webmoney, #'DigitalDataWebmoney'{}}) ->
+    <<"Webmoney">>.
 
-marshal_digital_wallet_provider(undefined) ->
-    undefined;
-marshal_digital_wallet_provider(Provider) ->
-    marshal_digital_wallet_provider_name(Provider).
-
-marshal_digital_wallet_provider_name(<<"Webmoney">>) -> webmoney.
-
-unmarshal_digital_wallet_provider_name(webmoney) -> <<"Webmoney">>.
+marshal_digital_wallet_provider(<<"Webmoney">>) -> {webmoney, #{}}.
