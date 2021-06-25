@@ -364,9 +364,9 @@ unmarshal_deposit_stat_status({failed, #fistfulstat_DepositFailed{failure = _Fai
 unmarshal_resource({bank_card, BankCard}) ->
     unmarshal_bank_card(BankCard);
 unmarshal_resource({crypto_wallet, CryptoWallet}) ->
-    unmarshal_crypto_wallet(CryptoWallet).
-% unmarshal_resource({digital_wallet, DigitalWallet}) ->
-%     unmarshal_digital_wallet(DigitalWallet).
+    unmarshal_crypto_wallet(CryptoWallet);
+unmarshal_resource({digital_wallet, DigitalWallet}) ->
+    unmarshal_digital_wallet(DigitalWallet).
 
 unmarshal_bank_card(#'BankCard'{
     token = Token,
@@ -398,36 +398,15 @@ unmarshal_crypto_currency_name({ethereum, _}) -> <<"Ethereum">>;
 unmarshal_crypto_currency_name({usdt, _}) -> <<"USDT">>;
 unmarshal_crypto_currency_name({zcash, _}) -> <<"Zcash">>.
 
-% unmarshal_digital_wallet(#'DigitalWallet'{
-%     id = DigitalWalletID,
-%     data = Data
-% }) ->
-%     genlib_map:compact(#{
-%         <<"type">> => <<"DigitalWalletDestinationResource">>,
-%         <<"id">> => unmarshal(string, DigitalWalletID),
-%         <<"provider">> => unmarshal_digital_wallet_data(Data)
-%     }).
+unmarshal_digital_wallet(#'DigitalWallet'{
+    id = DigitalWalletID,
+    data = Data
+}) ->
+    #{
+        <<"type">> => <<"DigitalWalletDestinationResource">>,
+        <<"id">> => DigitalWalletID,
+        <<"provider">> => unmarshal_digital_wallet_data(Data)
+    }.
 
-
-
-% marshal_digital_wallet_data(Resource) ->
-%     Provider = maps:get(<<"provider">>, Resource, undefined),
-%     {marshal_digital_wallet_provider(Provider), #'DigitalDataWebmoney'{}}.
-
-% unmarshal_digital_wallet_data(undefined) ->
-%     undefined;
-% unmarshal_digital_wallet_data({Name, #'DigitalDataWebmoney'{}}) ->
-%     unmarshal_digital_wallet_provider_name(Name).
-
-% unmarshal_digital_wallet_provider_name(webmoney) -> <<"Webmoney">>.
-
-
-% marshal(digital_wallet, Wallet = #{id := ID}) ->
-%     #'DigitalWallet'{
-%         id = marshal(string, ID),
-%         data = maybe_marshal(digital_data, maps:get(data, Wallet, undefined))
-%     };
-
-
-% marshal(digital_data, {webmoney, #{}}) ->
-%     {webmoney, #'DigitalDataWebmoney'{}
+unmarshal_digital_wallet_data({webmoney, #'DigitalDataWebmoney'{}}) ->
+    <<"Webmoney">>.
