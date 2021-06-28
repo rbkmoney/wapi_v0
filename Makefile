@@ -21,7 +21,7 @@ BASE_IMAGE_TAG := c114fc51a7b166d22144fcbf856f217dc7b5946f
 
 # Build image tag to be used
 BUILD_IMAGE_NAME := build-erlang
-BUILD_IMAGE_TAG := 1aa346b3638e143b4c1fafd74b3f25041024ce35
+BUILD_IMAGE_TAG := 2ea61e9556ad67d5918f060ed50353662ed84e59
 
 REGISTRY := dr2.rbkmoney.com
 
