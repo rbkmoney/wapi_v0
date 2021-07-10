@@ -29,6 +29,7 @@
         uac,
         prometheus,
         prometheus_cowboy,
+        bouncer_client,
         thrift,
         wapi_core,
         dmt_client

@@ -17,6 +17,7 @@
     | swag_server_wallet:request_context().
 
 -type context() :: #{
+    operation_id := operation_id(),
     woody_context := woody_context:ctx(),
     swagger_context := swagger_context()
 }.
@@ -28,10 +29,25 @@
 -type status_code() :: 200..599.
 -type headers() :: cowboy:http_headers().
 -type response_data() :: map() | [map()] | undefined.
--type request_result() :: {ok | error, {status_code(), headers(), response_data()}}.
+-type response() :: {status_code(), headers(), response_data()}.
+-type request_result() :: {ok | error, response()}.
 
--callback process_request(operation_id(), req_data(), context(), opts()) -> request_result() | no_return().
+-callback prepare(
+    OperationID :: operation_id(),
+    Req :: req_data(),
+    Context :: context(),
+    Opts :: opts()
+) -> {ok, request_state()} | no_return().
 
+-type throw(_T) :: no_return().
+
+-type request_state() :: #{
+    authorize := fun(() -> {ok, wapi_auth:resolution()} | throw(response())),
+    process := fun(() -> {ok, response()} | throw(response()))
+}.
+
+-export_type([request_state/0]).
+-export_type([response/0]).
 -export_type([operation_id/0]).
 -export_type([swagger_context/0]).
 -export_type([context/0]).
@@ -69,14 +85,20 @@ process_request(Tag, OperationID, Req, SwagContext, Opts, WoodyContext) ->
         %% TODO remove this fistful specific step, when separating the wapi service.
         ok = wapi_context:save(create_wapi_context(WoodyContext)),
 
-        Context = create_handler_context(SwagContext, WoodyContext),
+        Context = create_handler_context(OperationID, SwagContext, WoodyContext),
         Handler = get_handler(Tag),
-        case wapi_auth:authorize_operation(OperationID, Req, Context) of
-            ok ->
+        {ok, RequestState} = Handler:prepare(OperationID, Req, Context, Opts),
+        #{authorize := Authorize, process := Process} = RequestState,
+        {ok, Resolution} = Authorize(),
+        case Resolution of
+            allowed ->
                 ok = logger:debug("Operation ~p authorized", [OperationID]),
-                Handler:process_request(OperationID, Req, Context, Opts);
-            {error, Error} ->
-                ok = logger:info("Operation ~p authorization failed due to ~p", [OperationID, Error]),
+                Process();
+            forbidden ->
+                _ = logger:info("Authorization failed"),
+                wapi_handler_utils:reply_ok(401);
+            {forbidden, Error} ->
+                _ = logger:info("Operation ~p authorization failed due to ~p", [OperationID, Error]),
                 wapi_handler_utils:reply_ok(401)
         end
     catch
@@ -107,9 +129,10 @@ attach_deadline(undefined, Context) ->
 attach_deadline(Deadline, Context) ->
     woody_context:set_deadline(Deadline, Context).
 
--spec create_handler_context(swagger_context(), woody_context:ctx()) -> context().
-create_handler_context(SwagContext, WoodyContext) ->
+-spec create_handler_context(operation_id(), swagger_context(), woody_context:ctx()) -> context().
+create_handler_context(OpID, SwagContext, WoodyContext) ->
     #{
+        operation_id => OpID,
         woody_context => WoodyContext,
         swagger_context => SwagContext
     }.

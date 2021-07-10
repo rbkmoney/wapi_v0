@@ -21,24 +21,41 @@
 -export_type([context/0]).
 -export_type([claims/0]).
 -export_type([consumer/0]).
-
--type operation_id() :: wapi_handler:operation_id().
+-export_type([metadata/0]).
+-export_type([resolution/0]).
 
 %%
 
-% TODO
-% We need shared type here, exported somewhere in swagger app
--type request_data() :: #{atom() | binary() => term()}.
 -type auth_method() :: bearer_token | grant.
 -type resource() :: wallet | destination.
 -type auth_details() :: auth_method() | [{resource(), auth_details()}].
+-type realm() :: binary().
+-type resolution() ::
+    allowed
+    | forbidden
+    | {forbidden, _Reason}.
+
+-type metadata() :: #{
+    auth_method => auth_method(),
+    user_realm => realm()
+}.
 
 -define(DOMAIN, <<"wallet-api">>).
 
--spec authorize_operation(operation_id(), request_data(), wapi_handler:context()) -> ok | {error, unauthorized}.
-authorize_operation(OperationID, Req, #{swagger_context := #{auth_context := AuthContext}}) ->
+-spec authorize_operation(
+    Prototypes :: wapi_bouncer_context:prototypes(),
+    ProcessingContext :: wapi_handler:processing_context(),
+    Req :: wapi_handler:request_data()
+) -> resolution().
+authorize_operation(
+    Prototypes,
+    ProcessingContext = #{swagger_context := #{auth_context := AuthContext, operation_id := OperationID}},
+    Req
+) ->
     OperationACL = get_operation_access(OperationID, Req),
-    uac:authorize_operation(OperationACL, AuthContext).
+    OldAuthResult = uac:authorize_operation(OperationACL, AuthContext),
+    AuthResult = do_authorize_operation(Prototypes, ProcessingContext),
+    handle_auth_result(OldAuthResult, AuthResult).
 
 -type token_spec() ::
     {p2p_templates, P2PTemplateID :: binary(), Data :: map()}
@@ -299,3 +316,36 @@ maybe_grant_wapi_roles(Claims) ->
 -spec get_signee() -> term().
 get_signee() ->
     wapi_utils:unwrap(application:get_env(wapi, signee)).
+
+handle_auth_result(ok, allowed) ->
+    allowed;
+handle_auth_result(Res = {error, unauthorized}, forbidden) ->
+    Res;
+handle_auth_result(Res, undefined) ->
+    Res;
+handle_auth_result(OldRes, NewRes) ->
+    _ = logger:warning("New auth ~p differ from old ~p", [NewRes, OldRes]),
+    OldRes.
+
+%% TODO: Remove this clause after all handlers will be implemented
+do_authorize_operation([], _) ->
+    undefined;
+do_authorize_operation(Prototypes, #{swagger_context := ReqCtx, woody_context := WoodyCtx}) ->
+    case wapi_bouncer:extract_context_fragments(ReqCtx, WoodyCtx) of
+        Fragments when Fragments /= undefined ->
+            Fragments1 = wapi_bouncer_context:build(Prototypes, Fragments, WoodyCtx),
+            try
+                wapi_bouncer:judge(Fragments1, WoodyCtx)
+            catch
+                error:{woody_error, _Error} ->
+                    % TODO
+                    % This is temporary safeguard around bouncer integration put here so that
+                    % external requests would remain undisturbed by bouncer intermittent failures.
+                    % We need to remove it as soon as these two points come true:
+                    % * bouncer proves to be stable enough,
+                    % * capi starts depending on bouncer exclusively for authz decisions.
+                    undefined
+            end;
+        undefined ->
+            undefined
+    end.

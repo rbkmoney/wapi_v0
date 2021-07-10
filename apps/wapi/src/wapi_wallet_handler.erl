@@ -9,7 +9,7 @@
 -export([handle_request/4]).
 
 %% wapi_handler callbacks
--export([process_request/4]).
+-export([prepare/4]).
 
 %% Types
 
@@ -71,21 +71,21 @@ handle_request(OperationID, Req, SwagContext, Opts) ->
     wapi_handler:handle_request(wallet, OperationID, Req, SwagContext, Opts).
 
 %% Providers
--spec process_request(operation_id(), req_data(), handler_context(), handler_opts()) -> request_result().
-process_request('ListProviders', #{'residence' := Residence}, Context, _Opts) ->
+-spec prepare(operation_id(), req_data(), handler_context(), handler_opts()) -> request_result().
+prepare('ListProviders', #{'residence' := Residence}, Context, _Opts) ->
     Providers = wapi_provider_backend:get_providers(maybe_to_list(Residence), Context),
     wapi_handler_utils:reply_ok(200, Providers);
-process_request('GetProvider', #{'providerID' := Id}, Context, _Opts) ->
+prepare('GetProvider', #{'providerID' := Id}, Context, _Opts) ->
     case wapi_provider_backend:get_provider(Id, Context) of
         {ok, Provider} -> wapi_handler_utils:reply_ok(200, Provider);
         {error, notfound} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('ListProviderIdentityClasses', #{'providerID' := Id}, Context, _Opts) ->
+prepare('ListProviderIdentityClasses', #{'providerID' := Id}, Context, _Opts) ->
     case wapi_provider_backend:get_provider_identity_classes(Id, Context) of
         {ok, Classes} -> wapi_handler_utils:reply_ok(200, Classes);
         {error, notfound} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request(
+prepare(
     'GetProviderIdentityClass',
     #{
         'providerID' := ProviderId,
@@ -98,7 +98,7 @@ process_request(
         {ok, Class} -> wapi_handler_utils:reply_ok(200, Class);
         {error, notfound} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request(
+prepare(
     'ListProviderIdentityLevels',
     #{
         'providerID' := _ProviderId,
@@ -112,7 +112,7 @@ process_request(
     %%     {error, notfound} -> wapi_handler_utils:reply_ok(404)
     %% end;
     not_implemented();
-process_request(
+prepare(
     'GetProviderIdentityLevel',
     #{
         'providerID' := _ProviderId,
@@ -128,7 +128,7 @@ process_request(
     %% end;
     not_implemented();
 %% Identities
-process_request('ListIdentities', Params, Context, _Opts) ->
+prepare('ListIdentities', Params, Context, _Opts) ->
     case wapi_stat_backend:list_identities(Params, Context) of
         {ok, Result} ->
             wapi_handler_utils:reply_ok(200, Result);
@@ -143,13 +143,13 @@ process_request('ListIdentities', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('GetIdentity', #{'identityID' := IdentityId}, Context, _Opts) ->
+prepare('GetIdentity', #{'identityID' := IdentityId}, Context, _Opts) ->
     case wapi_identity_backend:get_identity(IdentityId, Context) of
         {ok, Identity} -> wapi_handler_utils:reply_ok(200, Identity);
         {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('CreateIdentity', #{'Identity' := Params}, Context, Opts) ->
+prepare('CreateIdentity', #{'Identity' := Params}, Context, Opts) ->
     case wapi_identity_backend:create_identity(Params, Context) of
         {ok, Identity = #{<<"id">> := IdentityId}} ->
             wapi_handler_utils:reply_ok(201, Identity, get_location('GetIdentity', [IdentityId], Opts));
@@ -166,13 +166,13 @@ process_request('CreateIdentity', #{'Identity' := Params}, Context, Opts) ->
         {error, {external_id_conflict, ID}} ->
             wapi_handler_utils:reply_error(409, #{<<"id">> => ID})
     end;
-process_request('ListIdentityChallenges', #{'identityID' := Id, 'status' := Status}, Context, _Opts) ->
+prepare('ListIdentityChallenges', #{'identityID' := Id, 'status' := Status}, Context, _Opts) ->
     case wapi_identity_backend:get_identity_challenges(Id, Status, Context) of
         {ok, Challenges} -> wapi_handler_utils:reply_ok(200, Challenges);
         {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request(
+prepare(
     'StartIdentityChallenge',
     #{
         'identityID' := IdentityId,
@@ -207,7 +207,7 @@ process_request(
             )
         %% TODO any other possible errors here?
     end;
-process_request(
+prepare(
     'GetIdentityChallenge',
     #{
         'identityID' := IdentityId,
@@ -222,13 +222,13 @@ process_request(
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404);
         {error, {challenge, notfound}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('PollIdentityChallengeEvents', Params, Context, _Opts) ->
+prepare('PollIdentityChallengeEvents', Params, Context, _Opts) ->
     case wapi_identity_backend:get_identity_challenge_events(Params, Context) of
         {ok, Events} -> wapi_handler_utils:reply_ok(200, Events);
         {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {identity, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetIdentityChallengeEvent', Params, Context, _Opts) ->
+prepare('GetIdentityChallengeEvent', Params, Context, _Opts) ->
     case wapi_identity_backend:get_identity_challenge_event(Params, Context) of
         {ok, Event} -> wapi_handler_utils:reply_ok(200, Event);
         {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
@@ -237,7 +237,7 @@ process_request('GetIdentityChallengeEvent', Params, Context, _Opts) ->
     end;
 %% Wallets
 
-process_request('ListWallets', Params, Context, _Opts) ->
+prepare('ListWallets', Params, Context, _Opts) ->
     case wapi_stat_backend:list_wallets(Params, Context) of
         {ok, List} ->
             wapi_handler_utils:reply_ok(200, List);
@@ -252,20 +252,20 @@ process_request('ListWallets', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('GetWallet', #{'walletID' := WalletId}, Context, _Opts) ->
+prepare('GetWallet', #{'walletID' := WalletId}, Context, _Opts) ->
     case wapi_wallet_backend:get(WalletId, Context) of
         {ok, Wallet} -> wapi_handler_utils:reply_ok(200, Wallet);
         {error, {wallet, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {wallet, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetWalletByExternalID', #{externalID := ExternalID}, Context, _Opts) ->
+prepare('GetWalletByExternalID', #{externalID := ExternalID}, Context, _Opts) ->
     case wapi_wallet_backend:get_by_external_id(ExternalID, Context) of
         {ok, Wallet} -> wapi_handler_utils:reply_ok(200, Wallet);
         {error, {wallet, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {wallet, unauthorized}} -> wapi_handler_utils:reply_ok(404);
         {error, {external_id, {unknown_external_id, ExternalID}}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('CreateWallet', #{'Wallet' := Params}, Context, Opts) ->
+prepare('CreateWallet', #{'Wallet' := Params}, Context, Opts) ->
     case wapi_wallet_backend:create(Params, Context) of
         {ok, Wallet = #{<<"id">> := WalletId}} ->
             wapi_handler_utils:reply_ok(201, Wallet, get_location('GetWallet', [WalletId], Opts));
@@ -280,13 +280,13 @@ process_request('CreateWallet', #{'Wallet' := Params}, Context, Opts) ->
         {error, {external_id_conflict, ID}} ->
             wapi_handler_utils:reply_error(409, #{<<"id">> => ID})
     end;
-process_request('GetWalletAccount', #{'walletID' := WalletId}, Context, _Opts) ->
+prepare('GetWalletAccount', #{'walletID' := WalletId}, Context, _Opts) ->
     case wapi_wallet_backend:get_account(WalletId, Context) of
         {ok, WalletAccount} -> wapi_handler_utils:reply_ok(200, WalletAccount);
         {error, {wallet, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {wallet, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request(
+prepare(
     'IssueWalletGrant',
     #{
         'walletID' := WalletId,
@@ -317,7 +317,7 @@ process_request(
     end;
 %% Destinations
 
-process_request('ListDestinations', Params, Context, _Opts) ->
+prepare('ListDestinations', Params, Context, _Opts) ->
     case wapi_stat_backend:list_destinations(Params, Context) of
         {ok, Result} ->
             wapi_handler_utils:reply_ok(200, Result);
@@ -332,13 +332,13 @@ process_request('ListDestinations', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('GetDestination', #{'destinationID' := DestinationId}, Context, _Opts) ->
+prepare('GetDestination', #{'destinationID' := DestinationId}, Context, _Opts) ->
     case wapi_destination_backend:get(DestinationId, Context) of
         {ok, Destination} -> wapi_handler_utils:reply_ok(200, Destination);
         {error, {destination, notfound}} -> wapi_handler_utils:reply_ok(404);
         {error, {destination, unauthorized}} -> wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetDestinationByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare('GetDestinationByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
     case wapi_destination_backend:get_by_external_id(ExternalID, Context) of
         {ok, Destination} ->
             wapi_handler_utils:reply_ok(200, Destination);
@@ -349,7 +349,7 @@ process_request('GetDestinationByExternalID', #{'externalID' := ExternalID}, Con
         {error, {destination, unauthorized}} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request('CreateDestination', #{'Destination' := Params}, Context, Opts) ->
+prepare('CreateDestination', #{'Destination' := Params}, Context, Opts) ->
     case wapi_destination_backend:create(Params, Context) of
         {ok, Destination = #{<<"id">> := DestinationId}} ->
             wapi_handler_utils:reply_ok(201, Destination, get_location('GetDestination', [DestinationId], Opts));
@@ -370,7 +370,7 @@ process_request('CreateDestination', #{'Destination' := Params}, Context, Opts) 
                 <<"description">> => <<"Specified resource token is invalid">>
             })
     end;
-process_request(
+prepare(
     'IssueDestinationGrant',
     #{
         'destinationID' := DestinationId,
@@ -400,7 +400,7 @@ process_request(
     end;
 %% Withdrawals
 
-process_request('CreateQuote', Params, Context, _Opts) ->
+prepare('CreateQuote', Params, Context, _Opts) ->
     case wapi_withdrawal_backend:create_quote(Params, Context) of
         {ok, Quote} ->
             wapi_handler_utils:reply_ok(202, Quote);
@@ -445,7 +445,7 @@ process_request('CreateQuote', Params, Context, _Opts) ->
                 wapi_handler_utils:get_error_msg(<<"Unknown card issuer">>)
             )
     end;
-process_request('CreateWithdrawal', #{'WithdrawalParameters' := Params}, Context, Opts) ->
+prepare('CreateWithdrawal', #{'WithdrawalParameters' := Params}, Context, Opts) ->
     case wapi_withdrawal_backend:create(Params, Context) of
         {ok, Withdrawal = #{<<"id">> := WithdrawalId}} ->
             wapi_handler_utils:reply_ok(202, Withdrawal, get_location('GetWithdrawal', [WithdrawalId], Opts));
@@ -515,7 +515,7 @@ process_request('CreateWithdrawal', #{'WithdrawalParameters' := Params}, Context
                 wapi_handler_utils:get_error_msg(<<"Unknown card issuer">>)
             )
     end;
-process_request('GetWithdrawal', #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
+prepare('GetWithdrawal', #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
     case wapi_withdrawal_backend:get(WithdrawalId, Context) of
         {ok, Withdrawal} ->
             wapi_handler_utils:reply_ok(200, Withdrawal);
@@ -524,7 +524,7 @@ process_request('GetWithdrawal', #{'withdrawalID' := WithdrawalId}, Context, _Op
         {error, {withdrawal, unauthorized}} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetWithdrawalByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare('GetWithdrawalByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
     case wapi_withdrawal_backend:get_by_external_id(ExternalID, Context) of
         {ok, Withdrawal} ->
             wapi_handler_utils:reply_ok(200, Withdrawal);
@@ -535,7 +535,7 @@ process_request('GetWithdrawalByExternalID', #{'externalID' := ExternalID}, Cont
         {error, {withdrawal, unauthorized}} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request('ListWithdrawals', Params, Context, _Opts) ->
+prepare('ListWithdrawals', Params, Context, _Opts) ->
     case wapi_stat_backend:list_withdrawals(Params, Context) of
         {ok, List} ->
             wapi_handler_utils:reply_ok(200, List);
@@ -550,7 +550,7 @@ process_request('ListWithdrawals', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('PollWithdrawalEvents', Params, Context, _Opts) ->
+prepare('PollWithdrawalEvents', Params, Context, _Opts) ->
     case wapi_withdrawal_backend:get_events(Params, Context) of
         {ok, Events} ->
             wapi_handler_utils:reply_ok(200, Events);
@@ -559,7 +559,7 @@ process_request('PollWithdrawalEvents', Params, Context, _Opts) ->
         {error, {withdrawal, unauthorized}} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request(
+prepare(
     'GetWithdrawalEvents',
     #{
         'withdrawalID' := WithdrawalId,
@@ -580,7 +580,7 @@ process_request(
     end;
 %% Deposits
 
-process_request('ListDeposits', Params, Context, _Opts) ->
+prepare('ListDeposits', Params, Context, _Opts) ->
     case wapi_stat_backend:list_deposits(Params, Context) of
         {ok, List} ->
             wapi_handler_utils:reply_ok(200, List);
@@ -595,7 +595,7 @@ process_request('ListDeposits', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('ListDepositReverts', Params, Context, _Opts) ->
+prepare('ListDepositReverts', Params, Context, _Opts) ->
     case wapi_stat_backend:list_deposit_reverts(Params, Context) of
         {ok, List} ->
             wapi_handler_utils:reply_ok(200, List);
@@ -610,7 +610,7 @@ process_request('ListDepositReverts', Params, Context, _Opts) ->
                 <<"description">> => Reason
             })
     end;
-process_request('ListDepositAdjustments', Params, Context, _Opts) ->
+prepare('ListDepositAdjustments', Params, Context, _Opts) ->
     case wapi_stat_backend:list_deposit_adjustments(Params, Context) of
         {ok, List} ->
             wapi_handler_utils:reply_ok(200, List);
@@ -627,7 +627,7 @@ process_request('ListDepositAdjustments', Params, Context, _Opts) ->
     end;
 %% W2W
 
-process_request('CreateW2WTransfer', #{'W2WTransferParameters' := Params}, Context, _Opts) ->
+prepare('CreateW2WTransfer', #{'W2WTransferParameters' := Params}, Context, _Opts) ->
     case wapi_w2w_backend:create_transfer(Params, Context) of
         {ok, W2WTransfer} ->
             wapi_handler_utils:reply_ok(202, W2WTransfer);
@@ -672,7 +672,7 @@ process_request('CreateW2WTransfer', #{'W2WTransferParameters' := Params}, Conte
                 wapi_handler_utils:get_error_msg(<<"Inconsistent currency">>)
             )
     end;
-process_request('GetW2WTransfer', #{w2wTransferID := ID}, Context, _Opts) ->
+prepare('GetW2WTransfer', #{w2wTransferID := ID}, Context, _Opts) ->
     case wapi_w2w_backend:get_transfer(ID, Context) of
         {ok, W2WTransfer} ->
             wapi_handler_utils:reply_ok(200, W2WTransfer);
@@ -683,7 +683,7 @@ process_request('GetW2WTransfer', #{w2wTransferID := ID}, Context, _Opts) ->
     end;
 %% P2P
 
-process_request('QuoteP2PTransfer', #{'QuoteParameters' := Params}, Context, _Opts) ->
+prepare('QuoteP2PTransfer', #{'QuoteParameters' := Params}, Context, _Opts) ->
     case wapi_p2p_transfer_backend:quote_transfer(Params, Context) of
         {ok, Quote} ->
             wapi_handler_utils:reply_ok(201, Quote);
@@ -729,7 +729,7 @@ process_request('QuoteP2PTransfer', #{'QuoteParameters' := Params}, Context, _Op
                 wapi_handler_utils:get_error_msg(<<"Operation not permitted">>)
             )
     end;
-process_request('CreateP2PTransfer', #{'P2PTransferParameters' := Params}, Context, _Opts) ->
+prepare('CreateP2PTransfer', #{'P2PTransferParameters' := Params}, Context, _Opts) ->
     case wapi_p2p_transfer_backend:create_transfer(Params, Context) of
         {ok, P2PTransfer} ->
             wapi_handler_utils:reply_ok(202, P2PTransfer);
@@ -783,7 +783,7 @@ process_request('CreateP2PTransfer', #{'P2PTransferParameters' := Params}, Conte
             )
         % note: thrift has less expressive errors
     end;
-process_request('GetP2PTransfer', #{p2pTransferID := ID}, Context, _Opts) ->
+prepare('GetP2PTransfer', #{p2pTransferID := ID}, Context, _Opts) ->
     case wapi_p2p_transfer_backend:get_transfer(ID, Context) of
         {ok, P2PTransfer} ->
             wapi_handler_utils:reply_ok(200, P2PTransfer);
@@ -792,7 +792,7 @@ process_request('GetP2PTransfer', #{p2pTransferID := ID}, Context, _Opts) ->
         {error, {p2p_transfer, notfound}} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetP2PTransferEvents', #{p2pTransferID := ID, continuationToken := CT}, Context, _Opts) ->
+prepare('GetP2PTransferEvents', #{p2pTransferID := ID, continuationToken := CT}, Context, _Opts) ->
     case wapi_p2p_transfer_backend:get_transfer_events(ID, CT, Context) of
         {ok, P2PTransferEvents} ->
             wapi_handler_utils:reply_ok(200, P2PTransferEvents);
@@ -815,7 +815,7 @@ process_request('GetP2PTransferEvents', #{p2pTransferID := ID, continuationToken
     end;
 %% P2P Templates
 
-process_request('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' := Params}, Context, Opts) ->
+prepare('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' := Params}, Context, Opts) ->
     case wapi_p2p_template_backend:create(Params, Context) of
         {ok, P2PTemplate = #{<<"id">> := TemplateID}} ->
             wapi_handler_utils:reply_ok(
@@ -836,19 +836,19 @@ process_request('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' :
         {error, invalid_operation_amount} ->
             wapi_handler_utils:reply_error(422, wapi_handler_utils:get_error_msg(<<"Invalid operation amount">>))
     end;
-process_request('GetP2PTransferTemplateByID', #{'p2pTransferTemplateID' := P2PTemplateID}, Context, _Opts) ->
+prepare('GetP2PTransferTemplateByID', #{'p2pTransferTemplateID' := P2PTemplateID}, Context, _Opts) ->
     case wapi_p2p_template_backend:get(P2PTemplateID, Context) of
         {ok, P2PTemplate} -> wapi_handler_utils:reply_ok(200, P2PTemplate);
         {error, {p2p_template, notfound}} -> wapi_handler_utils:reply_error(404);
         {error, {p2p_template, unauthorized}} -> wapi_handler_utils:reply_error(404)
     end;
-process_request('BlockP2PTransferTemplate', #{p2pTransferTemplateID := P2PTemplateID}, Context, _Opts) ->
+prepare('BlockP2PTransferTemplate', #{p2pTransferTemplateID := P2PTemplateID}, Context, _Opts) ->
     case wapi_p2p_template_backend:block(P2PTemplateID, Context) of
         ok -> wapi_handler_utils:reply_ok(204);
         {error, {p2p_template, notfound}} -> wapi_handler_utils:reply_error(404);
         {error, {p2p_template, unauthorized}} -> wapi_handler_utils:reply_error(404)
     end;
-process_request(
+prepare(
     'IssueP2PTransferTemplateAccessToken',
     #{
         p2pTransferTemplateID := P2PTemplateID,
@@ -870,7 +870,7 @@ process_request(
         {error, {p2p_template, unauthorized}} ->
             wapi_handler_utils:reply_error(404)
     end;
-process_request(
+prepare(
     'IssueP2PTransferTicket',
     #{
         p2pTransferTemplateID := P2PTemplateID,
@@ -892,7 +892,7 @@ process_request(
         {error, {p2p_template, unauthorized}} ->
             wapi_handler_utils:reply_error(404)
     end;
-process_request(
+prepare(
     'QuoteP2PTransferWithTemplate',
     #{
         p2pTransferTemplateID := P2PTemplateID,
@@ -941,7 +941,7 @@ process_request(
                 <<"description">> => <<"Specified resource token is invalid">>
             })
     end;
-process_request(
+prepare(
     'CreateP2PTransferWithTemplate',
     #{
         p2pTransferTemplateID := P2PTemplateID,
@@ -1001,7 +1001,7 @@ process_request(
     end;
 %% Webhooks
 
-process_request('CreateWebhook', Params, Context, _Opts) ->
+prepare('CreateWebhook', Params, Context, _Opts) ->
     case wapi_webhook_backend:create_webhook(Params, Context) of
         {ok, Webhook} ->
             wapi_handler_utils:reply_ok(201, Webhook);
@@ -1014,7 +1014,7 @@ process_request('CreateWebhook', Params, Context, _Opts) ->
         {error, {wallet, notfound}} ->
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such wallet">>))
     end;
-process_request('GetWebhooks', #{identityID := IdentityID}, Context, _Opts) ->
+prepare('GetWebhooks', #{identityID := IdentityID}, Context, _Opts) ->
     case wapi_webhook_backend:get_webhooks(IdentityID, Context) of
         {ok, Webhooks} ->
             wapi_handler_utils:reply_ok(200, Webhooks);
@@ -1023,7 +1023,7 @@ process_request('GetWebhooks', #{identityID := IdentityID}, Context, _Opts) ->
         {error, {identity, notfound}} ->
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>))
     end;
-process_request('GetWebhookByID', #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
+prepare('GetWebhookByID', #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
     case wapi_webhook_backend:get_webhook(WebhookID, IdentityID, Context) of
         {ok, Webhook} ->
             wapi_handler_utils:reply_ok(200, Webhook);
@@ -1034,7 +1034,7 @@ process_request('GetWebhookByID', #{identityID := IdentityID, webhookID := Webho
         {error, {identity, notfound}} ->
             wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>))
     end;
-process_request('DeleteWebhookByID', #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
+prepare('DeleteWebhookByID', #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
     case wapi_webhook_backend:delete_webhook(WebhookID, IdentityID, Context) of
         ok ->
             wapi_handler_utils:reply_ok(204);
@@ -1047,7 +1047,7 @@ process_request('DeleteWebhookByID', #{identityID := IdentityID, webhookID := We
     end;
 %% Reports
 
-process_request('CreateReport', Params, Context, _Opts) ->
+prepare('CreateReport', Params, Context, _Opts) ->
     case wapi_report_backend:create_report(Params, Context) of
         {ok, Report} ->
             wapi_handler_utils:reply_ok(201, Report);
@@ -1076,7 +1076,7 @@ process_request('CreateReport', Params, Context, _Opts) ->
                 <<"description">> => <<"contract not found">>
             })
     end;
-process_request(
+prepare(
     'GetReport',
     #{
         identityID := IdentityID,
@@ -1103,7 +1103,7 @@ process_request(
         {error, notfound} ->
             wapi_handler_utils:reply_ok(404)
     end;
-process_request('GetReports', Params, Context, _Opts) ->
+prepare('GetReports', Params, Context, _Opts) ->
     case wapi_report_backend:get_reports(Params, Context) of
         {ok, ReportList} ->
             wapi_handler_utils:reply_ok(200, ReportList);
@@ -1132,7 +1132,7 @@ process_request('GetReports', Params, Context, _Opts) ->
                 <<"description">> => io_lib:format("Max limit: ~p", [Limit])
             })
     end;
-process_request('DownloadFile', #{fileID := FileId}, Context, _Opts) ->
+prepare('DownloadFile', #{fileID := FileId}, Context, _Opts) ->
     ExpiresAt = get_default_url_lifetime(),
     case wapi_report_backend:download_file(FileId, ExpiresAt, Context) of
         {ok, URL} ->
@@ -1141,13 +1141,13 @@ process_request('DownloadFile', #{fileID := FileId}, Context, _Opts) ->
             wapi_handler_utils:reply_ok(404)
     end;
 %% Residences
-process_request('GetResidence', #{'residence' := ResidenceId}, _Context, _Opts) ->
+prepare('GetResidence', #{'residence' := ResidenceId}, _Context, _Opts) ->
     case wapi_residence:get(ResidenceId) of
         {ok, Residence} -> wapi_handler_utils:reply_ok(200, Residence);
         {error, notfound} -> wapi_handler_utils:reply_ok(404)
     end;
 %% Currencies
-process_request('GetCurrency', #{'currencyID' := CurrencyId}, _Context, _Opts) ->
+prepare('GetCurrency', #{'currencyID' := CurrencyId}, _Context, _Opts) ->
     case wapi_domain_backend:get_currency(CurrencyId) of
         {ok, Currency} -> wapi_handler_utils:reply_ok(200, Currency);
         {error, notfound} -> wapi_handler_utils:reply_ok(404)
