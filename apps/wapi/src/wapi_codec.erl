@@ -100,7 +100,7 @@ marshal(bank_card, BankCard = #{token := Token}) ->
     PaymentSystemDeprecated = maps:get(payment_system_deprecated, BankCard, undefined),
     MaskedPan = maps:get(masked_pan, BankCard, undefined),
     BankName = maps:get(bank_name, BankCard, undefined),
-    IsoCountryCode = maps:get(iso_country_code, BankCard, undefined),
+    IssuerCountry = maps:get(issuer_country, BankCard, undefined),
     CardType = maps:get(card_type, BankCard, undefined),
     ExpDate = maps:get(exp_date, BankCard, undefined),
     CardholderName = maps:get(cardholder_name, BankCard, undefined),
@@ -112,7 +112,7 @@ marshal(bank_card, BankCard = #{token := Token}) ->
         bank_name = marshal(string, BankName),
         payment_system = maybe_marshal(payment_system, PaymentSystem),
         payment_system_deprecated = maybe_marshal(payment_system_deprecated, PaymentSystemDeprecated),
-        issuer_country = maybe_marshal(iso_country_code, IsoCountryCode),
+        issuer_country = maybe_marshal(issuer_country, IssuerCountry),
         card_type = maybe_marshal(card_type, CardType),
         exp_date = maybe_marshal(exp_date, ExpDate),
         cardholder_name = maybe_marshal(string, CardholderName),
@@ -164,7 +164,7 @@ marshal(payment_system, #{id := Ref}) when is_binary(Ref) ->
     };
 marshal(payment_system_deprecated, V) when is_atom(V) ->
     V;
-marshal(iso_country_code, V) when is_atom(V) ->
+marshal(issuer_country, V) when is_atom(V) ->
     V;
 marshal(card_type, V) when is_atom(V) ->
     V;
@@ -275,7 +275,7 @@ unmarshal(bank_card, #'BankCard'{
     bank_name = BankName,
     payment_system = PaymentSystem,
     payment_system_deprecated = PaymentSystemDeprecated,
-    issuer_country = IsoCountryCode,
+    issuer_country = IssuerCountry,
     card_type = CardType,
     bin_data_id = BinDataID,
     exp_date = ExpDate,
@@ -288,7 +288,7 @@ unmarshal(bank_card, #'BankCard'{
         bin => maybe_unmarshal(string, Bin),
         masked_pan => maybe_unmarshal(string, MaskedPan),
         bank_name => maybe_unmarshal(string, BankName),
-        iso_country_code => maybe_unmarshal(iso_country_code, IsoCountryCode),
+        issuer_country => maybe_unmarshal(issuer_country, IssuerCountry),
         card_type => maybe_unmarshal(card_type, CardType),
         exp_date => maybe_unmarshal(exp_date, ExpDate),
         cardholder_name => maybe_unmarshal(string, CardholderName),
@@ -305,7 +305,7 @@ unmarshal(payment_system, #'PaymentSystemRef'{id = Ref}) ->
     };
 unmarshal(payment_system_deprecated, V) when is_atom(V) ->
     V;
-unmarshal(iso_country_code, V) when is_atom(V) ->
+unmarshal(issuer_country, V) when is_atom(V) ->
     V;
 unmarshal(card_type, V) when is_atom(V) ->
     V;
@@ -386,7 +386,7 @@ bank_card_codec_test() ->
         bin => <<"12345">>,
         masked_pan => <<"7890">>,
         bank_name => <<"bank">>,
-        iso_country_code => zmb,
+        issuer_country => zmb,
         card_type => credit_or_debit,
         exp_date => {12, 3456},
         cardholder_name => <<"name">>,
@@ -395,6 +395,23 @@ bank_card_codec_test() ->
     Type = {struct, struct, {ff_proto_base_thrift, 'BankCard'}},
     Binary = wapi_thrift_utils:serialize(Type, marshal(bank_card, BankCard)),
     Decoded = wapi_thrift_utils:deserialize(Type, Binary),
+    ?assertEqual(
+        Decoded,
+        #'BankCard'{
+            token = <<"token">>,
+            payment_system = #'PaymentSystemRef'{id = <<"foo">>},
+            payment_system_deprecated = visa,
+            bin = <<"12345">>,
+            masked_pan = <<"7890">>,
+            bank_name = <<"bank">>,
+            issuer_country = zmb,
+            card_type = credit_or_debit,
+            exp_date = #'BankCardExpDate'{month = 12, year=3456},
+            cardholder_name = <<"name">>,
+            bin_data_id = {obj, #{{str, <<"foo">>} => {i,1}}}
+        }
+    ),
     ?assertEqual(BankCard, unmarshal(bank_card, Decoded)).
+%    logger:warning("WOLOLO Binary=~p~n", [Decoded]).
 
 -endif.
