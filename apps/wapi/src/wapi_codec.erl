@@ -109,7 +109,7 @@ marshal(bank_card, BankCard = #{token := Token}) ->
         token = marshal(string, Token),
         bin = marshal(string, Bin),
         masked_pan = marshal(string, MaskedPan),
-        bank_name = marshal(string, BankName),s
+        bank_name = marshal(string, BankName),
         payment_system = maybe_marshal(payment_system, PaymentSystem),
         payment_system_deprecated = maybe_marshal(payment_system_deprecated, PaymentSystemDeprecated),
         issuer_country = maybe_marshal(iso_country_code, IsoCountryCode),
