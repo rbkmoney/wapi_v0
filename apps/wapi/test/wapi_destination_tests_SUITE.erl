@@ -448,6 +448,7 @@ generate_resource(bank_card) ->
             bin = <<"424242">>,
             masked_pan = <<"4242">>,
             bank_name = uniq(),
+            payment_system = #'PaymentSystemRef'{id = <<"foo">>},
             payment_system_deprecated = visa,
             issuer_country = rus,
             card_type = debit,
