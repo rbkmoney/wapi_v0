@@ -168,13 +168,9 @@ build(operation, Params = #{id := OperationID}, Acc) ->
             grants = maybe_with(grants, Params, fun build_grants/1)
         }
     };
-build(wallet, Params = #{}, Acc) ->
+build(wallet, Params, Acc) when is_list(Params) ->
     Acc#bctx_v1_ContextFragment{
-        wallet = maybe_with(
-            wallet,
-            Params,
-            fun(V) -> build_set(lists:map(fun build_entity_ctx/1, V)) end
-        )
+        wallet = build_set(lists:map(fun build_entity_ctx/1, Params))
     }.
 
 -spec build_wallet_entity(wallet_entity_type(), map()) -> wallet_entity().
