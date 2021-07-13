@@ -55,7 +55,7 @@ create(WalletID, Params, Context, HandlerContext) ->
     end.
 
 -spec get_by_external_id(external_id(), handler_context()) ->
-    {ok, response_data()}
+    {ok, response_data(), id()}
     | {error, {wallet, notfound}}
     | {error, {wallet, unauthorized}}
     | {error, {external_id, {unknown_external_id, external_id()}}}.
@@ -71,7 +71,7 @@ get_by_external_id(ExternalID, #{woody_context := WoodyContext} = HandlerContext
     end.
 
 -spec get(id(), handler_context()) ->
-    {ok, response_data()}
+    {ok, response_data(), id()}
     | {error, {wallet, notfound}}
     | {error, {wallet, unauthorized}}.
 get(WalletID, HandlerContext) ->
@@ -80,7 +80,7 @@ get(WalletID, HandlerContext) ->
         {ok, WalletThrift} ->
             case wapi_access_backend:check_resource(wallet, WalletThrift, HandlerContext) of
                 ok ->
-                    {ok, unmarshal(wallet, WalletThrift)};
+                    {ok, unmarshal(wallet, WalletThrift), wapi_access_backend:get_resource_owner(wallet, WalletThrift)};
                 {error, unauthorized} ->
                     {error, {wallet, unauthorized}}
             end;

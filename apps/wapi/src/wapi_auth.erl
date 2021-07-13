@@ -41,20 +41,22 @@
 }.
 
 -define(DOMAIN, <<"wallet-api">>).
+-define(authorized(Ctx), {authorized, Ctx}).
+-define(unauthorized(Ctx), {unauthorized, Ctx}).
 
 -spec authorize_operation(
     Prototypes :: wapi_bouncer_context:prototypes(),
-    ProcessingContext :: wapi_handler:processing_context(),
+    Context :: wapi_handler:context(),
     Req :: wapi_handler:request_data()
 ) -> resolution().
 authorize_operation(
     Prototypes,
-    ProcessingContext = #{swagger_context := #{auth_context := AuthContext, operation_id := OperationID}},
+    Context = #{swagger_context := #{auth_context := AuthContext, operation_id := OperationID}},
     Req
 ) ->
     OperationACL = get_operation_access(OperationID, Req),
     OldAuthResult = uac:authorize_operation(OperationACL, AuthContext),
-    AuthResult = do_authorize_operation(Prototypes, ProcessingContext),
+    AuthResult = do_authorize_operation(Prototypes, Context),
     handle_auth_result(OldAuthResult, AuthResult).
 
 -type token_spec() ::
@@ -327,15 +329,21 @@ handle_auth_result(OldRes, NewRes) ->
     _ = logger:warning("New auth ~p differ from old ~p", [NewRes, OldRes]),
     OldRes.
 
+extract_auth_context(#{auth_context := ?authorized(AuthContext)}) ->
+    AuthContext.
+
+get_auth_data(AuthContext) ->
+    maps:get(auth_data, AuthContext).
+
 %% TODO: Remove this clause after all handlers will be implemented
 do_authorize_operation([], _) ->
     undefined;
-do_authorize_operation(Prototypes, #{swagger_context := ReqCtx, woody_context := WoodyCtx}) ->
-    case wapi_bouncer:extract_context_fragments(ReqCtx, WoodyCtx) of
+do_authorize_operation(Prototypes, #{swagger_context := SwagContext, woody_context := WoodyContext}) ->
+    case wapi_bouncer:gather_context_fragments(get_auth_data(extract_auth_context(SwagContext)), SwagContext, WoodyContext) of
         Fragments when Fragments /= undefined ->
-            Fragments1 = wapi_bouncer_context:build(Prototypes, Fragments, WoodyCtx),
+            Fragments1 = wapi_bouncer_context:build(Prototypes, Fragments, WoodyContext),
             try
-                wapi_bouncer:judge(Fragments1, WoodyCtx)
+                wapi_bouncer:judge(Fragments1, WoodyContext)
             catch
                 error:{woody_error, _Error} ->
                     % TODO

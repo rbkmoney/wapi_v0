@@ -128,6 +128,8 @@
 
 -export([new/0]).
 -export([build/2]).
+-export([build_wallet_entity/2]).
+-export([build_wallet_entity/3]).
 
 %%
 
@@ -174,6 +176,36 @@ build(wallet, Params = #{}, Acc) ->
             fun(V) -> build_set(lists:map(fun build_entity_ctx/1, V)) end
         )
     }.
+
+-spec build_wallet_entity(wallet_entity_type(), map()) -> wallet_entity().
+build_wallet_entity(Type, Data) ->
+    build_wallet_entity(Type, Data, undefined).
+
+-spec build_wallet_entity(wallet_entity_type(), map(), entity_id() | undefined) -> wallet_entity().
+build_wallet_entity(identity, #{<<"id">> := ID}, PartyID) ->
+    {identity, #{id => ID, party => PartyID}};
+build_wallet_entity(wallet, #{<<"id">> := ID, <<"identity">> := Identity}, _) ->
+    {wallet, #{id => ID, identity => Identity}};
+build_wallet_entity(withdrawal, #{<<"id">> := ID, <<"wallet">> := Wallet}, _) ->
+    {withdrawal, #{id => ID, wallet => Wallet}};
+build_wallet_entity(deposit, #{<<"id">> := ID}, _) ->
+    {deposit, #{id => ID}};
+build_wallet_entity(w2w_transfer, #{<<"id">> := ID, <<"sender">> := Wallet}, _) ->
+    {w2w_transfer, #{id => ID, wallet => Wallet}};
+build_wallet_entity(source, #{<<"id">> := ID}, _) ->
+    {source, #{id => ID}};
+build_wallet_entity(destination, #{<<"id">> := ID, <<"identity">> := Identity}, _) ->
+    {destination, #{id => ID, identity => Identity}};
+build_wallet_entity(webhook, #{<<"id">> := ID, <<"identityID">> := Identity}, _) ->
+    {webhook, #{id => ID, identity => Identity}};
+build_wallet_entity(webhook_filter, #{}, _) ->
+    {webhook_filter, #{}};
+build_wallet_entity(report, #{<<"id">> := ID, <<"files">> := Files}, IdentityID) ->
+    {report, #{id => ID, identity => IdentityID, files => lists:map(fun(#{<<"id">> := FileID}) -> FileID end, Files)}};
+build_wallet_entity(report_file, #{<<"id">> := ID}, _) ->
+    {report_file, #{id => ID}};
+build_wallet_entity(_, undefined, _) ->
+    undefined.
 
 %%
 

@@ -3,6 +3,7 @@
 %% API
 -export([handle_request/5]).
 -export([throw_result/1]).
+-export([respond_if_undefined/2]).
 
 %% Behaviour definition
 
@@ -113,6 +114,12 @@ process_request(Tag, OperationID, Req, SwagContext, Opts, WoodyContext) ->
 -spec throw_result(request_result()) -> no_return().
 throw_result(Res) ->
     erlang:throw({?request_result, Res}).
+
+-spec respond_if_undefined(undefined | _Entity, response()) -> ok | throw(response()).
+respond_if_undefined(undefined, Response) ->
+    throw_result({ok, Response});
+respond_if_undefined(_, _Response) ->
+    ok.
 
 get_handler(wallet) -> wapi_wallet_handler;
 get_handler(payres) -> wapi_payres_handler.
