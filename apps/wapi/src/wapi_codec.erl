@@ -406,7 +406,7 @@ bank_card_codec_test() ->
             bank_name = <<"bank">>,
             issuer_country = zmb,
             card_type = credit_or_debit,
-            exp_date = #'BankCardExpDate'{month = 12, year=3456},
+            exp_date = #'BankCardExpDate'{month = 12, year = 3456},
             cardholder_name = <<"name">>,
             bin_data_id = {obj, #{{str, <<"foo">>} => {i, 1}}}
         }
