@@ -412,6 +412,5 @@ bank_card_codec_test() ->
         }
     ),
     ?assertEqual(BankCard, unmarshal(bank_card, Decoded)).
-%    logger:warning("WOLOLO Binary=~p~n", [Decoded]).
 
 -endif.
