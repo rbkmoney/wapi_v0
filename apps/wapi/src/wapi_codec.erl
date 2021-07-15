@@ -408,7 +408,7 @@ bank_card_codec_test() ->
             card_type = credit_or_debit,
             exp_date = #'BankCardExpDate'{month = 12, year=3456},
             cardholder_name = <<"name">>,
-            bin_data_id = {obj, #{{str, <<"foo">>} => {i,1}}}
+            bin_data_id = {obj, #{{str, <<"foo">>} => {i, 1}}}
         }
     ),
     ?assertEqual(BankCard, unmarshal(bank_card, Decoded)).
