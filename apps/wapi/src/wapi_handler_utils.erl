@@ -17,7 +17,6 @@
 -export([throw_not_implemented/0]).
 
 -export([get_owner/1]).
--export([get_auth_context/1]).
 
 -export([get_location/3]).
 
@@ -35,7 +34,7 @@
 -type headers() :: wapi_handler:headers().
 -type response_data() :: wapi_handler:response_data().
 
--type owner() :: binary().
+-type owner() :: binary() | undefined.
 
 -export_type([owner/0]).
 
@@ -43,9 +42,8 @@
 
 -spec get_owner(handler_context()) -> owner().
 get_owner(Context) ->
-    uac_authorizer_jwt:get_subject_id(get_auth_context(Context)).
+    wapi_auth:get_subject_id(get_auth_context(Context)).
 
--spec get_auth_context(handler_context()) -> wapi_auth:context().
 get_auth_context(#{swagger_context := #{auth_context := AuthContext}}) ->
     AuthContext.
 

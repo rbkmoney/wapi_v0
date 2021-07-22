@@ -27,7 +27,7 @@
 %% Pipeline
 
 -spec get_identity(id(), handler_context()) ->
-    {ok, {response_data(), id()}}
+    {ok, response_data(), id()}
     | {error, {identity, notfound}}
     | {error, {identity, unauthorized}}.
 get_identity(IdentityID, HandlerContext) ->

@@ -17,18 +17,18 @@
 ].
 
 -type prototype_operation() :: #{
-    id => swag_server:operation_id(),
-    party => entity_id(),
-    identity => entity_id(),
-    wallet => entity_id(),
-    withdrawal => entity_id(),
-    deposit => entity_id(),
-    w2w_transfer => entity_id(),
-    source => entity_id(),
-    destination => entity_id(),
-    report => entity_id(),
-    file => entity_id(),
-    webhook => entity_id()
+    id => swag_server_wallet:operation_id(),
+    party => maybe_entity_id(),
+    identity => maybe_entity_id(),
+    wallet => maybe_entity_id(),
+    withdrawal => maybe_entity_id(),
+    deposit => maybe_entity_id(),
+    w2w_transfer => maybe_entity_id(),
+    source => maybe_entity_id(),
+    destination => maybe_entity_id(),
+    report => maybe_entity_id(),
+    file => maybe_entity_id(),
+    webhook => maybe_entity_id()
 }.
 
 -type prototype_wallet() :: #{
@@ -44,9 +44,7 @@
     | {source, source_data()}
     | {destination, destination_data()}
     | {webhook, webhook_data()}
-    | {webhook_filter, webhook_filter_data()}
-    | {report, report_data()}
-    | {report_file, report_file_data()}.
+    | {report, report_data()}.
 
 -type wallet_entity_type() ::
     identity
@@ -62,50 +60,44 @@
     | report_file.
 
 -type identity_data() :: #{
-    id => entity_id(),
-    party => entity_id()
+    id => entity_id()
 }.
 
 -type wallet_data() :: #{
     id => entity_id(),
-    identity => entity_id(),
+    party => entity_id(),
     cash => cash()
 }.
 
 -type withdrawal_data() :: #{
     id => entity_id(),
-    wallet => entity_id()
+    party => entity_id()
 }.
 
 -type deposit_data() :: #{
     id => entity_id(),
-    wallet => entity_id()
+    party => entity_id()
 }.
 
 -type w2w_transfer_data() :: #{
     id => entity_id(),
-    wallet => entity_id()
+    party => entity_id()
 }.
 
 -type source_data() :: #{
     id => entity_id(),
-    identity => entity_id()
+    party => entity_id()
 }.
 
 -type destination_data() :: #{
     id => entity_id(),
-    identity => entity_id()
+    party => entity_id()
 }.
 
 -type webhook_data() :: #{
     id => entity_id(),
     identity => entity_id(),
-    filter => webhook_filter_data()
-}.
-
--type webhook_filter_data() :: #{
-    withdrawal => entity_id(),
-    destination => entity_id()
+    wallet => entity_id()
 }.
 
 -type report_data() :: #{
@@ -114,11 +106,8 @@
     files => [entity_id()]
 }.
 
--type report_file_data() :: #{
-    id => entity_id()
-}.
-
 -type entity_id() :: binary().
+-type maybe_entity_id() :: entity_id() | undefined.
 -type cash() :: #{amount := binary(), currency := binary()}.
 
 -export_type([prototypes/0]).
@@ -177,25 +166,25 @@ build(wallet, Params, Acc) when is_list(Params) ->
 build_wallet_entity(Type, Data) ->
     build_wallet_entity(Type, Data, undefined).
 
--spec build_wallet_entity(wallet_entity_type(), map(), entity_id() | undefined) -> wallet_entity().
+-spec build_wallet_entity(wallet_entity_type(), map() | undefined, entity_id() | undefined) -> wallet_entity().
 build_wallet_entity(identity, #{<<"id">> := ID}, PartyID) ->
     {identity, #{id => ID, party => PartyID}};
-build_wallet_entity(wallet, #{<<"id">> := ID, <<"identity">> := Identity}, _) ->
-    {wallet, #{id => ID, identity => Identity}};
-build_wallet_entity(withdrawal, #{<<"id">> := ID, <<"wallet">> := Wallet}, _) ->
-    {withdrawal, #{id => ID, wallet => Wallet}};
-build_wallet_entity(deposit, #{<<"id">> := ID}, _) ->
-    {deposit, #{id => ID}};
-build_wallet_entity(w2w_transfer, #{<<"id">> := ID, <<"sender">> := Wallet}, _) ->
-    {w2w_transfer, #{id => ID, wallet => Wallet}};
-build_wallet_entity(source, #{<<"id">> := ID}, _) ->
-    {source, #{id => ID}};
-build_wallet_entity(destination, #{<<"id">> := ID, <<"identity">> := Identity}, _) ->
-    {destination, #{id => ID, identity => Identity}};
-build_wallet_entity(webhook, #{<<"id">> := ID, <<"identityID">> := Identity}, _) ->
-    {webhook, #{id => ID, identity => Identity}};
-build_wallet_entity(webhook_filter, #{}, _) ->
-    {webhook_filter, #{}};
+build_wallet_entity(wallet, #{<<"id">> := ID}, PartyID) ->
+    {wallet, #{id => ID, party => PartyID}};
+build_wallet_entity(withdrawal, #{<<"id">> := ID}, PartyID) ->
+    {withdrawal, #{id => ID, party => PartyID}};
+build_wallet_entity(deposit, #{<<"id">> := ID, <<"wallet">> := WalletID}, _) ->
+    {deposit, #{id => ID, wallet => WalletID}};
+build_wallet_entity(w2w_transfer, #{<<"id">> := ID}, PartyID) ->
+    {w2w_transfer, #{id => ID, party => PartyID}};
+build_wallet_entity(source, #{<<"id">> := ID}, PartyID) ->
+    {source, #{id => ID, party => PartyID}};
+build_wallet_entity(destination, #{<<"id">> := ID}, PartyID) ->
+    {destination, #{id => ID, party => PartyID}};
+build_wallet_entity(webhook, Webhook = #{<<"id">> := ID, <<"identityID">> := Identity}, _) ->
+    Scope = maybe_with(<<"scope">>, Webhook),
+    WalletID = maybe_with(<<"walletID">>, Scope),
+    {webhook, #{id => ID, identity => Identity, wallet => WalletID}};
 build_wallet_entity(report, #{<<"id">> := ID, <<"files">> := Files}, IdentityID) ->
     {report, #{id => ID, identity => IdentityID, files => lists:map(fun(#{<<"id">> := FileID}) -> FileID end, Files)}};
 build_wallet_entity(report_file, #{<<"id">> := ID}, _) ->
@@ -209,16 +198,14 @@ build_entity_ctx({identity, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"Identity">>,
-        wallet = #bctx_v1_WalletAttrs{
-            party = maybe_with(party, Data)
-        }
+        party = maybe_with(party, Data)
     };
 build_entity_ctx({wallet, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"Wallet">>,
+        party = maybe_with(party, Data),
         wallet = #bctx_v1_WalletAttrs{
-            identity = maybe_with(identity, Data),
             body = maybe_with(cash, Data, fun build_cash/1)
         }
     };
@@ -226,9 +213,7 @@ build_entity_ctx({withdrawal, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"Withdrawal">>,
-        wallet = #bctx_v1_WalletAttrs{
-            wallet = maybe_with(wallet, Data)
-        }
+        party = maybe_with(party, Data)
     };
 build_entity_ctx({deposit, Data}) ->
     #bctx_v1_Entity{
@@ -242,25 +227,19 @@ build_entity_ctx({w2w_transfer, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"W2WTransfer">>,
-        wallet = #bctx_v1_WalletAttrs{
-            wallet = maybe_with(wallet, Data)
-        }
+        party = maybe_with(party, Data)
     };
 build_entity_ctx({source, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"Source">>,
-        wallet = #bctx_v1_WalletAttrs{
-            identity = maybe_with(identity, Data)
-        }
+        party = maybe_with(party, Data)
     };
 build_entity_ctx({destination, Data}) ->
     #bctx_v1_Entity{
         id = maybe_with(id, Data),
         type = <<"Destination">>,
-        wallet = #bctx_v1_WalletAttrs{
-            identity = maybe_with(identity, Data)
-        }
+        party = maybe_with(party, Data)
     };
 build_entity_ctx({webhook, Data}) ->
     #bctx_v1_Entity{
@@ -268,14 +247,7 @@ build_entity_ctx({webhook, Data}) ->
         type = <<"WalletWebhook">>,
         wallet = #bctx_v1_WalletAttrs{
             identity = maybe_with(identity, Data),
-            webhook = maybe_with(filter, Data, fun build_webhook_attrs/1)
-        }
-    };
-build_entity_ctx({webhook_filter, Data}) ->
-    #bctx_v1_Entity{
-        type = <<"WalletWebhookFilter">>,
-        wallet = #bctx_v1_WalletAttrs{
-            webhook = build_webhook_attrs(Data)
+            wallet = maybe_with(wallet, Data)
         }
     };
 build_entity_ctx({report, Data}) ->
@@ -286,11 +258,6 @@ build_entity_ctx({report, Data}) ->
             identity = maybe_with(identity, Data),
             report = maybe_with(files, Data, fun build_report_attrs/1)
         }
-    };
-build_entity_ctx({report_file, Data}) ->
-    #bctx_v1_Entity{
-        id = maybe_with(id, Data),
-        type = <<"WalletReportFile">>
     }.
 
 %%
@@ -329,12 +296,6 @@ build_cash(Cash) ->
 
 build_set(L) when is_list(L) ->
     ordsets:from_list(L).
-
-build_webhook_attrs(Attrs) ->
-    #bctx_v1_WalletWebhookAttrs{
-        withdrawal = maybe_with(withdrawal, Attrs),
-        destination = maybe_with(destination, Attrs)
-    }.
 
 build_report_attrs(Attrs) when is_list(Attrs) ->
     #bctx_v1_WalletReportAttrs{

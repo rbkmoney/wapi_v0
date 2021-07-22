@@ -54,15 +54,20 @@ map_error_type(wrong_type) -> <<"WrongType">>;
 map_error_type(wrong_array) -> <<"WrongArray">>.
 
 -spec authorize_api_key(operation_id(), api_key(), request_context(), handler_opts()) ->
-    false | {true, wapi_auth:context()}.
-authorize_api_key(OperationID, ApiKey, _SwagContext, _Opts) ->
+    Result :: false | {true, wapi_auth:preauth_context()}.
+authorize_api_key(OperationID, ApiKey, _Context, _HandlerOpts) ->
+    %% Since we require the request id field to create a woody context for our trip to token_keeper
+    %% it seems it is no longer possible to perform any authorization in this method.
+    %% To gain this ability back be would need to rewrite the swagger generator to perform its
+    %% request validation checks before this stage.
+    %% But since a decent chunk of authorization logic is already defined in the handler function
+    %% it is probably easier to move it there in its entirety.
     ok = scoper:add_scope('swag.server', #{api => wallet, operation_id => OperationID}),
-    case uac:authorize_api_key(ApiKey, wapi_auth:get_verification_options()) of
-        {ok, Context0} ->
-            Context = wapi_auth:create_wapi_context(Context0),
+    case wapi_auth:preauthorize_api_key(ApiKey) of
+        {ok, Context} ->
             {true, Context};
         {error, Error} ->
-            _ = logger:info("API Key authorization failed for ~p due to ~p", [OperationID, Error]),
+            _ = logger:info("API Key preauthorization failed for ~p due to ~p", [OperationID, Error]),
             false
     end.
 
@@ -1173,7 +1178,7 @@ prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId},
     end,
     Authorize = fun() ->
         Prototypes = [{
-            operation, #{destination => W2WTransferId, id => OperationID}},
+            operation, #{w2w_transfer => W2WTransferId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(w2w_transfer, ResultW2WTransfer, ResultW2WTransferOwner)]}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
@@ -1504,8 +1509,11 @@ prepare(
     end;
 
 %% Webhooks
-prepare(OperationID = 'CreateWebhook', Req = #{'Webhook' := #{<<"identityID">> := IdentityId}}, Context, _Opts) ->
-    AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
+prepare(OperationID = 'CreateWebhook', Req = #{'Webhook' := #{<<"identityID">> := IdentityId, <<"scope">> := Scope}}, Context, _Opts) ->
+    AuthContext = build_auth_context([
+        {identity, IdentityId},
+        maybe_with(<<"walletID">>, Scope, fun(WalletID) -> {wallet, WalletID} end)
+    ], [], Context),
     Authorize = fun() ->
         Prototypes = [
             {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
@@ -1675,21 +1683,13 @@ prepare(
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     ResultReport = case wapi_report_backend:get_report(ReportId, IdentityID, Context) of
         {ok, Report} ->
-            wapi_handler_utils:reply_ok(200, Report);
+            Report;
         {error, {identity, notfound}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            });
+            undefined;
         {error, {identity, unauthorized}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            });
+            undefined;
         {error, notfound} ->
-            wapi_handler_utils:reply_ok(404)
+            undefined
     end,
     Authorize = fun() ->
         Prototypes = [
@@ -1821,10 +1821,12 @@ get_expiration_deadline(Expiration) ->
             {error, expired}
     end.
 
+% -spec build_auth_context(list(tuple()), list(), handler_context()) ->
+%     list().
 build_auth_context([], Acc, _Context) ->
     Acc;
 build_auth_context([H | T], Acc, Context) ->
-    Context = case H of
+    AuthContext = case H of
         {identity, IdentityID} ->
             {ResultIdentity, ResultIdentityOwner} = case wapi_identity_backend:get_identity(IdentityID, Context) of
                 {ok, Identity, Owner} -> {Identity, Owner};
@@ -1861,7 +1863,7 @@ build_auth_context([H | T], Acc, Context) ->
             end,
             {webhook, {WebhookId, ResultWebhook}}
     end,
-    build_auth_context(T, [Context | Acc], Context).
+    build_auth_context(T, [AuthContext | Acc], Context).
 
 with_auth_context(operation, OpContext, AuthContext) ->
     lists:foldl(fun

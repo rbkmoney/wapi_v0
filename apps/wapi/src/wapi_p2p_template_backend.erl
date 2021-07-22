@@ -288,7 +288,7 @@ choose_tiket_expiration(WishExpiration, AccessExpiration) ->
 %% Extract access expiration from handler context
 
 context_access_expiration(HandlerContext) ->
-    AuthContext = wapi_handler_utils:get_auth_context(HandlerContext),
+    AuthContext = wapi_auth:extract_legacy_auth_context(HandlerContext),
     {_, _, Claims} = AuthContext,
     AccessData = maps:get(<<"data">>, Claims),
     maps:get(<<"expiration">>, AccessData).
@@ -296,7 +296,7 @@ context_access_expiration(HandlerContext) ->
 %% Extract transfer id from handler context
 
 context_transfer_id(HandlerContext) ->
-    AuthContext = wapi_handler_utils:get_auth_context(HandlerContext),
+    AuthContext = wapi_auth:extract_legacy_auth_context(HandlerContext),
     {_, _, Claims} = AuthContext,
     AccessData = maps:get(<<"data">>, Claims),
     maps:get(<<"transferID">>, AccessData).

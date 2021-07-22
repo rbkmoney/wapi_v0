@@ -60,8 +60,7 @@ create(WalletID, Params, Context, HandlerContext) ->
     | {error, {wallet, unauthorized}}
     | {error, {external_id, {unknown_external_id, external_id()}}}.
 get_by_external_id(ExternalID, #{woody_context := WoodyContext} = HandlerContext) ->
-    AuthContext = wapi_handler_utils:get_auth_context(HandlerContext),
-    PartyID = uac_authorizer_jwt:get_subject_id(AuthContext),
+    PartyID = wapi_handler_utils:get_owner(HandlerContext),
     IdempotentKey = wapi_backend_utils:get_idempotent_key(wallet, PartyID, ExternalID),
     case bender_client:get_internal_id(IdempotentKey, WoodyContext) of
         {ok, {WalletID, _}, _} ->

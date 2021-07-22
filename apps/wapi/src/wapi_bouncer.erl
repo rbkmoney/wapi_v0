@@ -14,7 +14,7 @@
 
 %%
 
--spec gather_context_fragments(tk_auth_data:auth_data(), swag_server:request_context(), woody_context:ctx()) ->
+-spec gather_context_fragments(tk_auth_data:auth_data(), swag_server_wallet:request_context(), woody_context:ctx()) ->
     wapi_bouncer_context:fragments().
 gather_context_fragments(AuthData, ReqCtx, WoodyCtx) ->
     {Base, External0} = wapi_bouncer_context:new(),
@@ -43,7 +43,7 @@ maybe_add_userorg(External, AuthData, WoodyCtx) ->
             External
     end.
 
--spec add_requester_context(swag_server:request_context(), wapi_bouncer_context:acc()) -> wapi_bouncer_context:acc().
+-spec add_requester_context(swag_server_wallet:request_context(), wapi_bouncer_context:acc()) -> wapi_bouncer_context:acc().
 add_requester_context(ReqCtx, FragmentAcc) ->
     ClientPeer = maps:get(peer, ReqCtx, #{}),
     bouncer_context_helpers:add_requester(

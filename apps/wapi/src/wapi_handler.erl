@@ -44,7 +44,7 @@
 
 -type request_state() :: #{
     authorize := fun(() -> {ok, wapi_auth:resolution()} | throw(response())),
-    process := fun(() -> {ok, response()} | throw(response()))
+    process := fun(() -> {ok, response()} | throw(request_result()))
 }.
 
 -export_type([request_state/0]).
@@ -80,10 +80,11 @@ handle_request(Tag, OperationID, Req, SwagContext = #{auth_context := AuthContex
             })
     end.
 
-process_request(Tag, OperationID, Req, SwagContext, Opts, WoodyContext) ->
+process_request(Tag, OperationID, Req, SwagContext0, Opts, WoodyContext) ->
     _ = logger:info("Processing request ~p", [OperationID]),
     try
         %% TODO remove this fistful specific step, when separating the wapi service.
+        SwagContext = do_authorize_api_key(SwagContext0, WoodyContext),
         ok = wapi_context:save(create_wapi_context(WoodyContext)),
 
         Context = create_handler_context(OperationID, SwagContext, WoodyContext),
@@ -92,17 +93,17 @@ process_request(Tag, OperationID, Req, SwagContext, Opts, WoodyContext) ->
         #{authorize := Authorize, process := Process} = RequestState,
         {ok, Resolution} = Authorize(),
         case Resolution of
-            allowed ->
+            ok ->
                 ok = logger:debug("Operation ~p authorized", [OperationID]),
                 Process();
-            forbidden ->
+            {error, unauthorized} ->
                 _ = logger:info("Authorization failed"),
-                wapi_handler_utils:reply_ok(401);
-            {forbidden, Error} ->
-                _ = logger:info("Operation ~p authorization failed due to ~p", [OperationID, Error]),
                 wapi_handler_utils:reply_ok(401)
         end
     catch
+        throw:{token_auth_failed, Reason} ->
+            _ = logger:info("API Key authorization failed for ~p due to ~p", [OperationID, Reason]),
+            wapi_handler_utils:reply_ok(401);
         throw:{?request_result, Result} ->
             Result;
         error:{woody_error, {Source, Class, Details}} ->
@@ -115,9 +116,9 @@ process_request(Tag, OperationID, Req, SwagContext, Opts, WoodyContext) ->
 throw_result(Res) ->
     erlang:throw({?request_result, Res}).
 
--spec respond_if_undefined(undefined | _Entity, response()) -> ok | throw(response()).
+-spec respond_if_undefined(undefined | _Entity, request_result()) -> ok | throw(request_result()).
 respond_if_undefined(undefined, Response) ->
-    throw_result({ok, Response});
+    throw_result(Response);
 respond_if_undefined(_, _Response) ->
     ok.
 
@@ -160,3 +161,19 @@ create_wapi_context(WoodyContext) ->
         woody_context => WoodyContext
     },
     wapi_context:create(ContextOptions).
+
+do_authorize_api_key(SwagContext = #{auth_context := PreAuthContext}, WoodyContext) ->
+    case wapi_auth:authorize_api_key(PreAuthContext, make_token_context(SwagContext), WoodyContext) of
+        {ok, AuthContext} ->
+            SwagContext#{auth_context => AuthContext};
+        {error, Error} ->
+            throw({token_auth_failed, Error})
+    end.
+
+make_token_context(#{cowboy_req := CowboyReq}) ->
+    case cowboy_req:header(<<"origin">>, CowboyReq) of
+        Origin when is_binary(Origin) ->
+            #{request_origin => Origin};
+        undefined ->
+            undefined
+    end.
