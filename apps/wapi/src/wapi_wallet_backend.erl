@@ -79,7 +79,8 @@ get(WalletID, HandlerContext) ->
         {ok, WalletThrift} ->
             case wapi_access_backend:check_resource(wallet, WalletThrift, HandlerContext) of
                 ok ->
-                    {ok, unmarshal(wallet, WalletThrift), wapi_access_backend:get_resource_owner(wallet, WalletThrift)};
+                    {ok, Owner} = wapi_access_backend:get_resource_owner(wallet, WalletThrift),
+                    {ok, unmarshal(wallet, WalletThrift), Owner};
                 {error, unauthorized} ->
                     {error, {wallet, unauthorized}}
             end;

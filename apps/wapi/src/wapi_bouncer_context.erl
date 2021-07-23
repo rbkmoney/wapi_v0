@@ -31,9 +31,7 @@
     webhook => maybe_entity_id()
 }.
 
--type prototype_wallet() :: #{
-    wallet => [wallet_entity()]
-}.
+-type prototype_wallet() :: [wallet_entity()].
 
 -type wallet_entity() ::
     {identity, identity_data()}

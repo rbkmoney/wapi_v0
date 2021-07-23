@@ -63,7 +63,7 @@ get_transfer(ID, HandlerContext) ->
         {ok, TransferThrift} ->
             case wapi_access_backend:check_resource(w2w_transfer, TransferThrift, HandlerContext) of
                 ok ->
-                    Owner = wapi_access_backend:get_resource_owner(w2w_transfer, TransferThrift),
+                    {ok, Owner} = wapi_access_backend:get_resource_owner(w2w_transfer, TransferThrift),
                     {ok, unmarshal(transfer, TransferThrift), Owner};
                 {error, unauthorized} ->
                     {error, {w2w_transfer, unauthorized}}

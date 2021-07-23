@@ -115,11 +115,8 @@ get(WithdrawalID, HandlerContext) ->
         {ok, WithdrawalThrift} ->
             case wapi_access_backend:check_resource(withdrawal, WithdrawalThrift, HandlerContext) of
                 ok ->
-                    {
-                        ok,
-                        unmarshal(withdrawal, WithdrawalThrift),
-                        wapi_access_backend:get_resource_owner(withdrawal, WithdrawalThrift)
-                    };
+                    {ok, Owner} = wapi_access_backend:get_resource_owner(withdrawal, WithdrawalThrift),
+                    {ok, unmarshal(withdrawal, WithdrawalThrift), Owner};
                 {error, unauthorized} ->
                     {error, {withdrawal, unauthorized}}
             end;

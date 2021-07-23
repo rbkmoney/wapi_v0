@@ -91,11 +91,8 @@ get(DestinationID, HandlerContext) ->
         {ok, DestinationThrift} ->
             case wapi_access_backend:check_resource(destination, DestinationThrift, HandlerContext) of
                 ok ->
-                    {
-                        ok,
-                        unmarshal(destination, DestinationThrift),
-                        wapi_access_backend:get_resource_owner(destination, DestinationThrift)
-                    };
+                    {ok, Owner} = wapi_access_backend:get_resource_owner(destination, DestinationThrift),
+                    {ok, unmarshal(destination, DestinationThrift), Owner};
                 {error, unauthorized} ->
                     {error, {destination, unauthorized}}
             end;

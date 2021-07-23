@@ -220,8 +220,8 @@ prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Contex
         {error, {identity, unauthorized}} -> {undefined, undefined}
     end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{identity => IdentityId, id => OperationID}},
+        Prototypes = [
+            {operation, #{identity => IdentityId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(identity, ResultIdentity, ResultOwner)]}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
@@ -446,8 +446,8 @@ prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Op
         {error, {wallet, unauthorized}} -> {undefined, undefined}
     end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{wallet => WalletId, id => OperationID}},
+        Prototypes = [
+            {operation, #{wallet => WalletId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, ResultWalletOwner)]}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
@@ -1173,7 +1173,7 @@ prepare(OperationID = 'CreateW2WTransfer', Req = #{'W2WTransferParameters' := Pa
 prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
     {ResultW2WTransfer, ResultW2WTransferOwner} = case wapi_w2w_backend:get_transfer(W2WTransferId, Context) of
         {ok, W2WTransfer, Owner} -> {W2WTransfer, Owner};
-        {error, {w2w_transfer, notfound}} -> {undefined, undefined};
+        {error, {w2w_transfer, {unknown_w2w_transfer, _ID}}} -> {undefined, undefined};
         {error, {w2w_transfer, unauthorized}} -> {undefined, undefined}
     end,
     Authorize = fun() ->
@@ -1858,8 +1858,10 @@ build_auth_context([H | T], Acc, Context) ->
         {webhook, WebhookId, IdentityID} ->
             ResultWebhook = case wapi_webhook_backend:get_webhook(WebhookId, IdentityID, Context) of
                 {ok, Webhook} -> Webhook;
+                {error, notfound} -> {undefined, undefined};
                 {error, {webhook, notfound}} -> {undefined, undefined};
-                {error, {webhook, unauthorized}} -> {undefined, undefined}
+                {error, {identity, notfound}} -> {undefined, undefined};
+                {error, {identity, unauthorized}} -> {undefined, undefined}
             end,
             {webhook, {WebhookId, ResultWebhook}}
     end,
