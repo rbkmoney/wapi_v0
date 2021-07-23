@@ -13,7 +13,7 @@
 
 %% Pipeline
 
--import(wapi_pipeline, [do/1, unwrap/1]).
+-import(wapi_pipeline, [do/1]).
 
 %%
 
