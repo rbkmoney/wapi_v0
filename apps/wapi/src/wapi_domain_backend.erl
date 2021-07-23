@@ -11,12 +11,6 @@
 
 -type id() :: binary().
 
--export([object/1]).
--export([object/2]).
-
--type object_data() :: any().
--type object_ref() :: dmsl_domain_thrift:'Reference'().
-
 %% Pipeline
 
 -import(wapi_pipeline, [do/1, unwrap/1]).
@@ -26,12 +20,10 @@
 -spec get_currency(id()) -> {ok, response_data()} | {error, notfound}.
 get_currency(ID) ->
     do(fun() ->
-        Currency = unwrap(
-            object(
-                latest,
+        Currency =
+            dmt_client:checkout_object(
                 {currency, #domain_CurrencyRef{symbolic_code = ID}}
-            )
-        ),
+            ),
         #{
             <<"id">> => genlib_string:to_upper(genlib:to_binary(ID)),
             <<"name">> => Currency#domain_Currency.name,
@@ -39,21 +31,3 @@ get_currency(ID) ->
             <<"exponent">> => Currency#domain_Currency.exponent
         }
     end).
-
-%%
-%% Internal
-%%
-
--spec object(object_ref()) -> {ok, object_data()} | {error, notfound}.
-object(ObjectRef) ->
-    object(latest, ObjectRef).
-
--spec object(dmt_client:version(), object_ref()) -> {ok, object_data()} | {error, notfound}.
-object(Ref, {Type, ObjectRef}) ->
-    try dmt_client:checkout_object(Ref, {Type, ObjectRef}) of
-        {Type, {_RecordName, ObjectRef, ObjectData}} ->
-            {ok, ObjectData}
-    catch
-        #'ObjectNotFound'{} ->
-            {error, notfound}
-    end.
