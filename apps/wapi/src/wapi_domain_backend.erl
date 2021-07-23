@@ -20,11 +20,11 @@
 -spec get_currency(id()) -> {ok, response_data()} | {error, notfound}.
 get_currency(ID) ->
     do(fun() ->
-        Currency =
+        {Type, {_RecordName, ObjectRef, Currency}} =
             dmt_client:checkout_object(
                 {currency, #domain_CurrencyRef{symbolic_code = ID}}
             ),
-        #{
+        Currency#{
             <<"id">> => genlib_string:to_upper(genlib:to_binary(ID)),
             <<"name">> => Currency#domain_Currency.name,
             <<"numericCode">> => genlib:to_binary(Currency#domain_Currency.numeric_code),
