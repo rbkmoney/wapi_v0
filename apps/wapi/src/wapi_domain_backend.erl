@@ -20,7 +20,7 @@
 -spec get_currency(id()) -> {ok, response_data()} | {error, notfound}.
 get_currency(ID) ->
     do(fun() ->
-        {Type, {_RecordName, ObjectRef, Currency}} =
+        {_Type, {_RecordName, _ObjectRef, Currency}} =
             dmt_client:checkout_object(
                 {currency, #domain_CurrencyRef{symbolic_code = ID}}
             ),
