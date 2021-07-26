@@ -12,7 +12,6 @@
 -type id() :: binary().
 -type object_data() :: any().
 
-
 %% Pipeline
 
 -import(wapi_pipeline, [do/1, unwrap/1]).
@@ -30,7 +29,6 @@ get_currency(ID) ->
             <<"exponent">> => Currency#domain_Currency.exponent
         }
     end).
-
 
 %%
 %% Internal
