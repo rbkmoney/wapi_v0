@@ -41,8 +41,7 @@ object(ObjectRef) ->
 -spec object(dmt_client:version(), dmt_client:object_ref()) -> {ok, object_data()} | {error, notfound}.
 object(Ref, {Type, ObjectRef}) ->
     try dmt_client:checkout_object(Ref, {Type, ObjectRef}) of
-        #'VersionedObject'{object = Object} ->
-            {Type, {_RecordName, ObjectRef, ObjectData}} = Object,
+        {Type, {_RecordName, ObjectRef, ObjectData}} ->
             {ok, ObjectData}
     catch
         #'ObjectNotFound'{} ->
