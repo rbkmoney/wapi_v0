@@ -10,24 +10,43 @@
 %%
 
 -type id() :: binary().
+-type object_data() :: any().
+
 
 %% Pipeline
 
--import(wapi_pipeline, [do/1]).
+-import(wapi_pipeline, [do/1, unwrap/1]).
 
 %%
 
 -spec get_currency(id()) -> {ok, response_data()} | {error, notfound}.
 get_currency(ID) ->
     do(fun() ->
-        {_Type, {_RecordName, _ObjectRef, Currency}} =
-            dmt_client:checkout_object(
-                {currency, #domain_CurrencyRef{symbolic_code = ID}}
-            ),
-        Currency#{
+        Currency = unwrap(object({currency, #domain_CurrencyRef{symbolic_code = ID}})),
+        #{
             <<"id">> => genlib_string:to_upper(genlib:to_binary(ID)),
             <<"name">> => Currency#domain_Currency.name,
             <<"numericCode">> => genlib:to_binary(Currency#domain_Currency.numeric_code),
             <<"exponent">> => Currency#domain_Currency.exponent
         }
     end).
+
+
+%%
+%% Internal
+%%
+
+-spec object(dmt_client:object_ref()) -> {ok, object_data()} | {error, notfound}.
+object(ObjectRef) ->
+    object(latest, ObjectRef).
+
+-spec object(dmt_client:version(), dmt_client:object_ref()) -> {ok, object_data()} | {error, notfound}.
+object(Ref, {Type, ObjectRef}) ->
+    try dmt_client:checkout_object(Ref, {Type, ObjectRef}) of
+        #'VersionedObject'{object = Object} ->
+            {Type, {_RecordName, ObjectRef, ObjectData}} = Object,
+            {ok, ObjectData}
+    catch
+        #'ObjectNotFound'{} ->
+            {error, notfound}
+    end.
