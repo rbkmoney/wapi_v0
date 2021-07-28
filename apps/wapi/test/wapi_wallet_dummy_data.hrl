@@ -33,19 +33,6 @@
 
 -define(DEFAULT_METADATA(), #{<<"somedata">> => {str, ?STRING}}).
 
--define(TEST_PAYMENT_TOKEN, ?TEST_PAYMENT_TOKEN(visa)).
-
--define(TEST_PAYMENT_TOKEN(PaymentSystem),
-    wapi_utils:map_to_base64url(#{
-        <<"type">> => <<"bank_card">>,
-        <<"token">> => ?STRING,
-        <<"payment_system_deprecated">> => atom_to_binary(PaymentSystem, utf8),
-        <<"bin">> => <<"411111">>,
-        <<"lastDigits">> => <<"4111">>,
-        <<"masked_pan">> => <<"1111">>
-    })
-).
-
 -define(CASH, #'Cash'{
     amount = ?INTEGER,
     currency = #'CurrencyRef'{
@@ -146,7 +133,6 @@
     bin = <<"424242">>,
     masked_pan = <<"4242">>,
     bank_name = ?STRING,
-    payment_system_deprecated = visa,
     issuer_country = rus,
     card_type = debit
 }).
@@ -518,14 +504,12 @@
                 #domain_PaymentMethodRef{
                     id =
                         {tokenized_bank_card_deprecated, #domain_TokenizedBankCard{
-                            payment_system_deprecated = mastercard,
                             token_provider = applepay
                         }}
                 },
                 #domain_PaymentMethodRef{
                     id =
                         {tokenized_bank_card_deprecated, #domain_TokenizedBankCard{
-                            payment_system_deprecated = visa,
                             token_provider = applepay
                         }}
                 }
