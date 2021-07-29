@@ -504,13 +504,13 @@
                 #domain_PaymentMethodRef{
                     id =
                         {tokenized_bank_card_deprecated, #domain_TokenizedBankCard{
-                            token_provider = applepay
+                            token_provider_deprecated = applepay
                         }}
                 },
                 #domain_PaymentMethodRef{
                     id =
                         {tokenized_bank_card_deprecated, #domain_TokenizedBankCard{
-                            token_provider = applepay
+                            token_provider_deprecated = applepay
                         }}
                 }
             ])}
