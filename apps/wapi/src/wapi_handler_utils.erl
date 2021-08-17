@@ -19,6 +19,7 @@
 -export([get_owner/1]).
 
 -export([get_location/3]).
+-export([maybe_with/3]).
 
 -define(APP, wapi).
 
@@ -107,3 +108,12 @@ get_location(PathSpec, Params, _Opts) ->
 ) -> woody:result().
 service_call({ServiceName, Function, Args}, #{woody_context := WoodyContext}) ->
     wapi_woody_client:call_service(ServiceName, Function, Args, WoodyContext).
+
+-spec maybe_with(term(), map(), fun((_Value) -> Result)) -> Result | undefined.
+maybe_with(Name, Params, Then) ->
+    case maps:get(Name, Params, undefined) of
+        V when V /= undefined ->
+            Then(V);
+        undefined ->
+            undefined
+    end.

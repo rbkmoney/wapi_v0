@@ -110,10 +110,17 @@ start_app({wapi = AppName, Config}) ->
         {port, ?WAPI_PORT},
         {realm, <<"external">>},
         {public_endpoint, <<"localhost:8080">>},
+        {bouncer_ruleset_id, ?TEST_RULESET_ID},
         {access_conf, #{
             jwt => #{
                 keyset => #{
-                    wapi => {pem_file, get_keysource("private.pem", Config)}
+                    wapi => #{
+                        source => {pem_file, get_keysource("private.pem", Config)},
+                        metadata => #{
+                            auth_method => user_session_token,
+                            user_realm => <<"external">>
+                        }
+                    }
                 }
             }
         }},
@@ -194,6 +201,19 @@ stop_mocked_service_sup(SupPid) ->
 mock_services(Services, SupOrConfig) ->
     maps:map(fun start_woody_client/2, mock_services_(Services, SupOrConfig)).
 
+-define(TK_META_NS_KEYCLOAK, <<"com.rbkmoney.keycloak">>).
+-define(TK_META_NS_APIKEYMGMT, <<"com.rbkmoney.apikeymgmt">>).
+
+start_woody_client(token_keeper, Urls) ->
+    start_app(token_keeper_client, [
+        {service_client, #{
+            url => Urls
+        }},
+        {namespace_mappings, #{
+            user_session => ?TK_META_NS_KEYCLOAK,
+            api_key => ?TK_META_NS_APIKEYMGMT
+        }}
+    ]);
 start_woody_client(bender_thrift, Urls) ->
     ok = application:set_env(
         bender_client,
@@ -227,12 +247,15 @@ mock_services_(Services, SupPid) when is_pid(SupPid) ->
             handlers => lists:map(fun mock_service_handler/1, Services)
         }
     ),
+
     {ok, _} = supervisor:start_child(SupPid, ChildSpec),
 
     lists:foldl(
         fun(Service, Acc) ->
             ServiceName = get_service_name(Service),
             case ServiceName of
+                token_keeper ->
+                    Acc#{ServiceName => make_url(ServiceName, Port)};
                 bender_thrift ->
                     Acc#{ServiceName => #{'Bender' => make_url(ServiceName, Port)}};
                 _ ->
@@ -251,6 +274,8 @@ get_service_name({ServiceName, _WoodyService, _Fun}) ->
 
 mock_service_handler({ServiceName = bender_thrift, Fun}) ->
     mock_service_handler(ServiceName, {bender_thrift, 'Bender'}, Fun);
+mock_service_handler({ServiceName = token_keeper, Fun}) ->
+    mock_service_handler(ServiceName, {tk_token_keeper_thrift, 'TokenKeeper'}, Fun);
 mock_service_handler({ServiceName, Fun}) ->
     mock_service_handler(ServiceName, wapi_woody_client:get_service_modname(ServiceName), Fun);
 mock_service_handler({ServiceName, WoodyService, Fun}) ->

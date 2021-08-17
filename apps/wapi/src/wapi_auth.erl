@@ -63,12 +63,17 @@
 -define(unauthorized(Ctx), {unauthorized, Ctx}).
 
 -spec get_subject_id(auth_context()) -> binary() | undefined.
-get_subject_id(?authorized(#{auth_data := AuthData})) ->
+get_subject_id(?authorized(#{auth_data := AuthData} = Context)) ->
     case tk_auth_data:get_party_id(AuthData) of
         PartyId when is_binary(PartyId) ->
             PartyId;
         undefined ->
-            tk_auth_data:get_user_id(AuthData)
+            case tk_auth_data:get_user_id(AuthData) of
+                PartyId when is_binary(PartyId) ->
+                    PartyId;
+                undefined ->
+                    get_subject_id(?authorized(maps:without([auth_data], Context)))
+                end
     end;
 get_subject_id(?authorized(#{legacy := Context})) ->
     uac_authorizer_jwt:get_subject_id(Context).

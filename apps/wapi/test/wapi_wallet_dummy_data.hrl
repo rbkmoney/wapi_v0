@@ -22,6 +22,8 @@
 }).
 
 -define(BOOLEAN, true).
+-define(TEST_USER_REALM, <<"external">>).
+-define(TEST_RULESET_ID, <<"test/api">>).
 
 -define(DEFAULT_CONTEXT_NO_NAME(PartyID), #{
     <<"com.rbkmoney.wapi">> =>

@@ -84,8 +84,9 @@ process_request(Tag, OperationID, Req, SwagContext0, Opts, WoodyContext) ->
     _ = logger:info("Processing request ~p", [OperationID]),
     try
         %% TODO remove this fistful specific step, when separating the wapi service.
-        SwagContext = do_authorize_api_key(SwagContext0, WoodyContext),
         ok = wapi_context:save(create_wapi_context(WoodyContext)),
+
+        SwagContext = do_authorize_api_key(SwagContext0, WoodyContext),
 
         Context = create_handler_context(OperationID, SwagContext, WoodyContext),
         Handler = get_handler(Tag),
