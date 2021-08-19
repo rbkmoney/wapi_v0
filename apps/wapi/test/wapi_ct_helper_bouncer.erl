@@ -7,6 +7,8 @@
 
 -export([mock_assert_op_ctx/2]).
 -export([mock_assert_party_op_ctx/3]).
+-export([mock_assert_identity_op_ctx/4]).
+-export([mock_assert_destination_op_ctx/4]).
 
 -export([mock_client/1]).
 -export([mock_arbiter/2]).
@@ -37,10 +39,43 @@ mock_assert_party_op_ctx(Op, PartyID, Config) ->
         Config
     ).
 
+-spec mock_assert_identity_op_ctx(_, _, _, _) -> _.
+mock_assert_identity_op_ctx(Op, IdentityID, PartyID, Config) ->
+    mock_arbiter(
+        ?assertContextMatches(
+            #bctx_v1_ContextFragment{
+                wapi = ?CTX_WAPI(?CTX_IDENTITY_OP(Op, IdentityID)),
+                wallet = [#bctx_v1_Entity{
+                    id = IdentityID,
+                    type = <<"Identity">>,
+                    party = PartyID
+                }]
+            }
+        ),
+        Config
+    ).
+
+-spec mock_assert_destination_op_ctx(_, _, _, _) -> _.
+mock_assert_destination_op_ctx(Op, DestinationID, PartyID, Config) ->
+    mock_arbiter(
+        ?assertContextMatches(
+            #bctx_v1_ContextFragment{
+                wapi = ?CTX_WAPI(?CTX_IDENTITY_OP(Op, DestinationID)),
+                wallet = [#bctx_v1_Entity{
+                    id = DestinationID,
+                    type = <<"Destination">>,
+                    party = PartyID
+                }]
+            }
+        ),
+        Config
+    ).
+
 %%
 
 start_client(ServiceURLs) ->
     ServiceClients = maps:map(fun(_, URL) -> #{url => URL} end, ServiceURLs),
+    % error({test, ServiceClients}),
     Acc = application:get_env(bouncer_client, service_clients, #{}),
     wapi_ct_helper:start_app(bouncer_client, [{service_clients, maps:merge(Acc, ServiceClients)}]).
 
@@ -51,7 +86,6 @@ mock_client(SupOrConfig) ->
             [
                 {
                     org_management,
-                    {orgmgmt_auth_context_provider_thrift, 'AuthContextProvider'},
                     fun('GetUserContext', {UserID}) ->
                         {encoded_fragment, Fragment} = bouncer_client:bake_context_fragment(
                             bouncer_context_helpers:make_user_fragment(#{
@@ -75,7 +109,6 @@ mock_arbiter(JudgeFun, SupOrConfig) ->
             [
                 {
                     bouncer,
-                    {bouncer_decisions_thrift, 'Arbiter'},
                     fun('Judge', {?TEST_RULESET_ID, Context}) ->
                         Fragments = decode_context(Context),
                         Combined = combine_fragments(Fragments),

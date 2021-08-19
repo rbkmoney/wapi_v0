@@ -1894,8 +1894,9 @@ with_auth_context(wallet, Entities, AuthContext) ->
 
 respond_if_any_undefined_in_auth_context(AuthContext, Respond) ->
     case lists:any(fun
-            ({_, undefined, _}) -> true;
-            ({_, undefined}) -> true
+            ({_Type, {_, undefined, _}}) -> true;
+            ({_Type, {_, undefined}}) -> true;
+            (_) -> false
         end,
         AuthContext
     ) of

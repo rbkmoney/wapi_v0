@@ -19,8 +19,8 @@ gather_context_fragments(AuthData, ReqCtx, WoodyCtx) ->
 -spec judge(wapi_bouncer_context:fragments(), woody_context:ctx()) -> wapi_auth:resolution().
 judge({Acc, External}, WoodyCtx) ->
     % TODO error out early?
-    {ok, RulesetID} = application:get_env(capi, bouncer_ruleset_id),
-    JudgeContext = #{fragments => External#{<<"capi">> => Acc}},
+    {ok, RulesetID} = application:get_env(wapi, bouncer_ruleset_id),
+    JudgeContext = #{fragments => External#{<<"wapi">> => Acc}},
     bouncer_client:judge(RulesetID, JudgeContext, WoodyCtx).
 
 %%

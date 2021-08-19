@@ -40,7 +40,7 @@
 
 % common-api is used since it is the domain used in production RN
 % TODO: change to wallet-api (or just omit since it is the default one) when new tokens will be a thing
--define(DOMAIN, <<"common-api">>).
+-define(DOMAIN, <<"wallet-api">>).
 -define(badresp(Code), {error, {invalid_response_code, Code}}).
 -define(emptyresp(Code), {error, {Code, #{}}}).
 
@@ -401,7 +401,7 @@ uniq() ->
 
 generate_identity(PartyID) ->
     #idnt_IdentityState{
-        id = uniq(),
+        id = ?STRING,
         name = uniq(),
         party_id = PartyID,
         provider_id = uniq(),
@@ -420,7 +420,7 @@ generate_context(PartyID) ->
     }.
 
 generate_destination(IdentityID, Resource, Context) ->
-    ID = uniq(),
+    ID = ?STRING,
     #dst_DestinationState{
         id = ID,
         name = uniq(),
@@ -494,9 +494,9 @@ make_destination(C, ResourceType) ->
 create_destination_start_mocks(C, CreateDestinationResultFun) ->
     PartyID = ?config(party, C),
 
+    wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, C),
     wapi_ct_helper:mock_services(
         [
-            {token_keeper, wapi_ct_helper_tk:user_session_handler()},
             {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
             {fistful_identity, fun
                 ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};

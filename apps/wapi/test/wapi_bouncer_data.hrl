@@ -19,6 +19,11 @@
     party = PartyID
 }).
 
+-define(CTX_IDENTITY_OP(ID, IdentityID), #bctx_v1_WalletAPIOperation{
+    id = ID,
+    identity = IdentityID
+}).
+
 -define(assertContextMatches(Expect), fun(Context) ->
     try
         ?assertMatch(Expect, Context),
@@ -26,6 +31,7 @@
     catch
         error:AssertMatchError:Stacktrace ->
             logger:error("failed ~p at ~p", [AssertMatchError, Stacktrace]),
+            logger:error("~n Expect ~p ~n Context ~p", [Expect, Context]),
             {throwing, #bdcs_InvalidContext{}}
     end
 end).

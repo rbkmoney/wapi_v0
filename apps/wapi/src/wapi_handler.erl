@@ -94,10 +94,10 @@ process_request(Tag, OperationID, Req, SwagContext0, Opts, WoodyContext) ->
         #{authorize := Authorize, process := Process} = RequestState,
         {ok, Resolution} = Authorize(),
         case Resolution of
-            ok ->
+            allowed ->
                 ok = logger:debug("Operation ~p authorized", [OperationID]),
                 Process();
-            {error, unauthorized} ->
+            forbidden ->
                 _ = logger:info("Authorization failed"),
                 wapi_handler_utils:reply_ok(401)
         end

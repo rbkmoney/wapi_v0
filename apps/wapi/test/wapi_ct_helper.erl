@@ -92,7 +92,9 @@ init_suite(Module, Config) ->
     Apps1 =
         start_app(scoper) ++
             start_app(woody) ++
-            start_app({wapi, Config}),
+            start_app({wapi, Config}) ++
+        wapi_ct_helper_tk:mock_service(wapi_ct_helper_tk:user_session_handler(), SupPid),
+        wapi_ct_helper_bouncer:mock_client(SupPid),
     [{apps, lists:reverse(Apps1)}, {suite_test_sup, SupPid} | Config].
 
 -spec start_app(app_name()) -> [app_name()].
@@ -254,6 +256,10 @@ mock_services_(Services, SupPid) when is_pid(SupPid) ->
         fun(Service, Acc) ->
             ServiceName = get_service_name(Service),
             case ServiceName of
+                bouncer ->
+                    Acc#{ServiceName => make_url(ServiceName, Port)};
+                org_management ->
+                    Acc#{ServiceName => make_url(ServiceName, Port)};
                 token_keeper ->
                     Acc#{ServiceName => make_url(ServiceName, Port)};
                 bender_thrift ->
@@ -276,6 +282,10 @@ mock_service_handler({ServiceName = bender_thrift, Fun}) ->
     mock_service_handler(ServiceName, {bender_thrift, 'Bender'}, Fun);
 mock_service_handler({ServiceName = token_keeper, Fun}) ->
     mock_service_handler(ServiceName, {tk_token_keeper_thrift, 'TokenKeeper'}, Fun);
+mock_service_handler({ServiceName = bouncer, Fun}) ->
+    mock_service_handler(ServiceName, {bouncer_decisions_thrift, 'Arbiter'}, Fun);
+mock_service_handler({ServiceName = org_management, Fun}) ->
+    mock_service_handler(ServiceName, {orgmgmt_auth_context_provider_thrift, 'AuthContextProvider'}, Fun);
 mock_service_handler({ServiceName, Fun}) ->
     mock_service_handler(ServiceName, wapi_woody_client:get_service_modname(ServiceName), Fun);
 mock_service_handler({ServiceName, WoodyService, Fun}) ->
