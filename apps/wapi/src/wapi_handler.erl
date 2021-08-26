@@ -4,6 +4,7 @@
 -export([handle_request/5]).
 -export([throw_result/1]).
 -export([respond_if_undefined/2]).
+-export([respond_if_forbidden/2]).
 
 %% Behaviour definition
 
@@ -122,6 +123,13 @@ respond_if_undefined(undefined, Response) ->
     throw_result(Response);
 respond_if_undefined(_, _Response) ->
     ok.
+
+-spec respond_if_forbidden(Resolution, response()) -> Resolution | throw(request_result()) when
+    Resolution :: wapi_auth:resolution().
+respond_if_forbidden(forbidden, Response) ->
+    throw_result(Response);
+respond_if_forbidden(allowed, _Response) ->
+    allowed.
 
 get_handler(wallet) -> wapi_wallet_handler;
 get_handler(payres) -> wapi_payres_handler.

@@ -60,7 +60,7 @@ mock_assert_destination_op_ctx(Op, DestinationID, PartyID, Config) ->
     mock_arbiter(
         ?assertContextMatches(
             #bctx_v1_ContextFragment{
-                wapi = ?CTX_WAPI(?CTX_IDENTITY_OP(Op, DestinationID)),
+                wapi = ?CTX_WAPI(?CTX_DESTINAION_OP(Op, DestinationID)),
                 wallet = [#bctx_v1_Entity{
                     id = DestinationID,
                     type = <<"Destination">>,

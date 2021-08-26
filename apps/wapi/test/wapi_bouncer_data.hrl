@@ -24,6 +24,11 @@
     identity = IdentityID
 }).
 
+-define(CTX_DESTINAION_OP(ID, DestinaionID), #bctx_v1_WalletAPIOperation{
+    id = ID,
+    destination = DestinaionID
+}).
+
 -define(assertContextMatches(Expect), fun(Context) ->
     try
         ?assertMatch(Expect, Context),

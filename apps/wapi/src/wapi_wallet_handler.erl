@@ -53,6 +53,15 @@ map_error_type(schema_violated) -> <<"SchemaViolated">>;
 map_error_type(wrong_type) -> <<"WrongType">>;
 map_error_type(wrong_array) -> <<"WrongArray">>.
 
+mask_notfound(Resolution) ->
+    % ED-206
+    % When bouncer says "forbidden" we can't really tell the difference between "forbidden because
+    % of no such invoice", "forbidden because client has no access to it" and "forbidden because
+    % client has no permission to act on it". From the point of view of existing integrations this
+    % is not great, so we have to mask specific instances of missing authorization as if specified
+    % invoice is nonexistent.
+    wapi_handler:respond_if_forbidden(Resolution, wapi_handler_utils:reply_ok(404)).
+
 -spec authorize_api_key(operation_id(), api_key(), request_context(), handler_opts()) ->
     Result :: false | {true, wapi_auth:preauth_context()}.
 authorize_api_key(OperationID, ApiKey, _Context, _HandlerOpts) ->
@@ -194,7 +203,7 @@ prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Contex
             {operation, #{identity => IdentityId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(identity, ResultIdentity, {party, ResultOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -414,7 +423,7 @@ prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Op
             {operation, #{wallet => WalletId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, {party, ResultWalletOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -434,7 +443,7 @@ prepare(OperationID = 'GetWalletByExternalID', Req = #{externalID := ExternalID}
             operation, #{wallet => WalletId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, {party, ResultWalletOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -569,7 +578,7 @@ prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId
             operation, #{destination => DestinationId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(destination, ResultDestination, {party, ResultDestinationOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -589,7 +598,7 @@ prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := Exte
             operation, #{destination => DestinationId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(destination, ResultDestination, {party, ResultDestinationOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -833,7 +842,7 @@ prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, 
             operation, #{destination => WithdrawalId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -853,7 +862,7 @@ prepare(OperationID = 'GetWithdrawalByExternalID', Req = #{'externalID' := Exter
             operation, #{destination => WithdrawalId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1130,7 +1139,7 @@ prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId},
             operation, #{w2w_transfer => W2WTransferId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(w2w_transfer, ResultW2WTransfer, {party, ResultW2WTransferOwner})]}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
     end,
     Process = fun() ->

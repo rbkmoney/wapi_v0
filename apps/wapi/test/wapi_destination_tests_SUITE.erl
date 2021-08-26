@@ -7,6 +7,7 @@
 
 -include_lib("jose/include/jose_jwk.hrl").
 -include_lib("wapi_wallet_dummy_data.hrl").
+-include_lib("wapi_bouncer_data.hrl").
 
 -include_lib("fistful_proto/include/ff_proto_destination_thrift.hrl").
 
@@ -40,7 +41,7 @@
 
 % common-api is used since it is the domain used in production RN
 % TODO: change to wallet-api (or just omit since it is the default one) when new tokens will be a thing
--define(DOMAIN, <<"wallet-api">>).
+-define(DOMAIN, <<"common-api">>).
 -define(badresp(Code), {error, {invalid_response_code, Code}}).
 -define(emptyresp(Code), {error, {Code, #{}}}).
 
@@ -104,7 +105,7 @@ init_per_group(Group, Config) when Group =:= base ->
         })
     ),
     Party = genlib:bsuuid(),
-    {ok, Token} = wapi_ct_helper:issue_token(Party, [{[party], write}], unlimited, ?DOMAIN),
+    {ok, Token} = wapi_ct_helper:issue_token(Party, [{[party], write}, {[party], read}], unlimited, ?DOMAIN),
     Config1 = [{party, Party} | Config],
     [{context, wapi_ct_helper:get_context(Token)} | Config1];
 init_per_group(_, Config) ->
@@ -194,6 +195,8 @@ create_destination_fail_party_inaccessible_test(C) ->
 -spec get_destination_ok_test(config()) -> _.
 get_destination_ok_test(C) ->
     Destination = make_destination(C, bank_card),
+    PartyID = ?config(party, C),
+    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, C),
     get_destination_start_mocks(C, fun() -> {ok, Destination} end),
     ?assertMatch(
         {ok, _},
@@ -203,6 +206,7 @@ get_destination_ok_test(C) ->
 -spec get_destination_fail_notfound_test(config()) -> _.
 get_destination_fail_notfound_test(C) ->
     get_destination_start_mocks(C, fun() -> throw(#fistful_DestinationNotFound{}) end),
+    wapi_ct_helper_bouncer:judge_always_forbidden(),
     ?assertEqual(
         {error, {404, #{}}},
         get_destination_call_api(C)
@@ -296,14 +300,20 @@ do_destination_lifecycle(ResourceType, C) ->
                 ('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT};
                 ('GetInternalID', _) -> {ok, ?GET_INTERNAL_ID_RESULT}
             end},
-            {fistful_identity, fun('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)} end},
+            {fistful_identity, fun
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
+                ('Get', _) -> {ok, ?IDENTITY(PartyID)}
+            end},
             {fistful_destination, fun
                 ('Create', _) -> {ok, Destination};
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
                 ('Get', _) -> {ok, Destination}
             end}
         ],
         C
     ),
+    Sup0 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
+    wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, Sup0),
     {ok, CreateResult} = call_api(
         fun swag_client_wallet_withdrawals_api:create_destination/3,
         #{
@@ -311,6 +321,10 @@ do_destination_lifecycle(ResourceType, C) ->
         },
         wapi_ct_helper:cfg(context, C)
     ),
+    exit(Sup0, kill),
+    _ = timer:sleep(1000),
+    Sup1 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
+    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, Sup1),
     {ok, GetResult} = call_api(
         fun swag_client_wallet_withdrawals_api:get_destination/3,
         #{
@@ -321,6 +335,10 @@ do_destination_lifecycle(ResourceType, C) ->
         wapi_ct_helper:cfg(context, C)
     ),
     ?assertEqual(CreateResult, GetResult),
+    exit(Sup1, kill),
+    _ = timer:sleep(1000),
+    Sup2 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
+    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestinationByExternalID">>, ?STRING, PartyID, Sup2),
     {ok, GetByIDResult} = call_api(
         fun swag_client_wallet_withdrawals_api:get_destination_by_external_id/3,
         #{
@@ -330,6 +348,8 @@ do_destination_lifecycle(ResourceType, C) ->
         },
         wapi_ct_helper:cfg(context, C)
     ),
+    exit(Sup2, kill),
+    _ = timer:sleep(1000),
     ?assertEqual(GetResult, GetByIDResult),
     ?assertEqual(Destination#dst_DestinationState.id, maps:get(<<"id">>, CreateResult)),
     ?assertEqual(Destination#dst_DestinationState.external_id, maps:get(<<"externalID">>, CreateResult)),
@@ -434,7 +454,7 @@ generate_destination(IdentityID, Resource, Context) ->
             accounter_account_id = 123
         },
         resource = Resource,
-        external_id = uniq(),
+        external_id = ?STRING,
         created_at = <<"2016-03-22T06:12:27Z">>,
         blocking = unblocked,
         metadata = #{<<"key">> => {str, <<"val">>}},
@@ -508,9 +528,13 @@ create_destination_start_mocks(C, CreateDestinationResultFun) ->
     ).
 
 get_destination_start_mocks(C, GetDestinationResultFun) ->
+    PartyID = ?config(party, C),
     wapi_ct_helper:mock_services(
         [
-            {fistful_destination, fun('Get', _) -> GetDestinationResultFun() end}
+            {fistful_destination, fun
+                ('GetContext', _) -> {ok, ?DEFAULT_CONTEXT(PartyID)};
+                ('Get', _) -> GetDestinationResultFun()
+            end}
         ],
         C
     ).

@@ -166,6 +166,8 @@ build_wallet_entity(Type, Data) ->
 
 -spec build_wallet_entity(wallet_entity_type(), map() | undefined, {atom() | undefined, entity_id() | undefined}) ->
     wallet_entity().
+build_wallet_entity(Type, undefined, _) ->
+    {Type, undefined};
 build_wallet_entity(Type, Params, {IDKey, ID}) ->
   {Type, maps:merge(genlib_map:compact(#{
     IDKey => ID,
@@ -254,6 +256,8 @@ build_entity_ctx({report, Data}) ->
 
 %%
 
+maybe(_Name, undefined) ->
+    undefined;
 maybe(Name, Params) ->
     maps:get(Name, Params, undefined).
 

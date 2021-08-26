@@ -132,7 +132,7 @@ authorize_operation(
     Req
 ) ->
     OperationACL = get_operation_access(OperationID, Req),
-    OldAuthResult = uac:authorize_operation(OperationACL, extract_legacy_auth_context(Context)),
+    OldAuthResult = uac:authorize_operation(OperationACL, create_wapi_context(extract_legacy_auth_context(Context))),
     AuthResult = do_authorize_operation(Prototypes, Context),
     map_old_auth_result(handle_auth_result(OldAuthResult, AuthResult)).
 
@@ -373,13 +373,13 @@ hierarchy_to_acl(Hierarchy) ->
     ).
 
 -spec create_wapi_context(uac_authorizer_jwt:t()) -> uac_authorizer_jwt:t().
-create_wapi_context({ID, Party, Claims}) ->
+create_wapi_context({ID, Party, Claims, Metadata}) ->
     % Create new acl
     % So far we want to give every token full set of permissions
     % This is a temporary solution
     % @TODO remove when we issue new tokens
     NewClaims = maybe_grant_wapi_roles(Claims),
-    {ID, Party, NewClaims}.
+    {ID, Party, NewClaims, Metadata}.
 
 maybe_grant_wapi_roles(Claims) ->
     case genlib_map:get(<<"resource_access">>, Claims) of
@@ -387,7 +387,7 @@ maybe_grant_wapi_roles(Claims) ->
             Claims;
         #{<<"common-api">> := _} ->
             Hierarchy = wapi_auth:get_resource_hierarchy(),
-            Claims#{<<"resource_access">> => #{?DOMAIN => hierarchy_to_acl(Hierarchy)}};
+            Claims#{<<"resource_access">> => #{?DOMAIN => #{<<"roles">> => uac_acl:encode(hierarchy_to_acl(Hierarchy))}}};
         _ ->
             undefined
     end.
