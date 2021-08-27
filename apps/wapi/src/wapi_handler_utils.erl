@@ -110,6 +110,8 @@ service_call({ServiceName, Function, Args}, #{woody_context := WoodyContext}) ->
     wapi_woody_client:call_service(ServiceName, Function, Args, WoodyContext).
 
 -spec maybe_with(term(), map(), fun((_Value) -> Result)) -> Result | undefined.
+maybe_with(_Name, undefined, _Then) ->
+    undefined;
 maybe_with(Name, Params, Then) ->
     case maps:get(Name, Params, undefined) of
         V when V /= undefined ->

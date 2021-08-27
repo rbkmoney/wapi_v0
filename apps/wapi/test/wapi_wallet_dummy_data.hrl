@@ -415,15 +415,17 @@
     ])
 }).
 
--define(WEBHOOK(EventFilter), #webhooker_Webhook{
+-define(WEBHOOK_WITH_WALLET(EventFilter, WalletID), #webhooker_Webhook{
     id = ?INTEGER,
     identity_id = ?STRING,
-    wallet_id = ?STRING,
+    wallet_id = WalletID,
     event_filter = EventFilter,
     url = ?STRING,
     pub_key = ?STRING,
     enabled = false
 }).
+
+-define(WEBHOOK(EventFilter), ?WEBHOOK_WITH_WALLET(EventFilter, undefined)).
 
 -define(W2W_TRANSFER(PartyID), #w2w_transfer_W2WTransferState{
     id = ?STRING,

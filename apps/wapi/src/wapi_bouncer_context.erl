@@ -148,7 +148,7 @@ build(operation, Params = #{id := OperationID}, Acc) ->
                 w2w_transfer = maybe(w2w_transfer, Params),
                 source = maybe(source, Params),
                 destination = maybe(destination, Params),
-                report = maybe(report, Params),
+                report = wapi_handler_utils:maybe_with(report, Params, fun genlib:to_binary/1),
                 file = maybe(file, Params),
                 webhook = maybe(webhook, Params)
             },
@@ -168,6 +168,17 @@ build_wallet_entity(Type, Data) ->
     wallet_entity().
 build_wallet_entity(Type, undefined, _) ->
     {Type, undefined};
+build_wallet_entity(report = Type, Params, {IDKey, ID}) ->
+    EntityID = case maps:get(<<"id">>, Params, undefined) of
+        undefined ->
+            undefined;
+        Result ->
+            genlib:to_binary(Result)
+    end,
+    {Type, maps:merge(genlib_map:compact(#{
+    IDKey => ID,
+    id => EntityID
+  }), build_wallet_entity_(Type, Params))};
 build_wallet_entity(Type, Params, {IDKey, ID}) ->
   {Type, maps:merge(genlib_map:compact(#{
     IDKey => ID,

@@ -1593,7 +1593,13 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
+        respond_if_any_undefined_in_auth_context(
+            AuthContext,
+            wapi_handler_utils:reply_ok(400, #{
+                <<"errorType">> => <<"NotFound">>,
+                <<"name">> => <<"identity">>,
+                <<"description">> => <<"identity not found">>
+        })),
         case wapi_report_backend:create_report(Req, Context) of
             {ok, Report} ->
                 wapi_handler_utils:reply_ok(201, Report);
@@ -1653,7 +1659,13 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
+        respond_if_any_undefined_in_auth_context(
+            AuthContext,
+            wapi_handler_utils:reply_ok(400, #{
+                <<"errorType">> => <<"NotFound">>,
+                <<"name">> => <<"identity">>,
+                <<"description">> => <<"identity not found">>
+        })),
         wapi_handler:respond_if_undefined(ResultReport, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultReport)
     end,
@@ -1669,7 +1681,13 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
+        respond_if_any_undefined_in_auth_context(
+            AuthContext,
+            wapi_handler_utils:reply_ok(400, #{
+                <<"errorType">> => <<"NotFound">>,
+                <<"name">> => <<"identity">>,
+                <<"description">> => <<"identity not found">>
+        })),
         case wapi_report_backend:get_reports(Req, Context) of
             {ok, ReportList} ->
                 wapi_handler_utils:reply_ok(200, ReportList);
@@ -1772,6 +1790,8 @@ get_expiration_deadline(Expiration) ->
 
 build_auth_context([], Acc, _Context) ->
     Acc;
+build_auth_context([undefined | T], Acc, Context) ->
+    build_auth_context(T, Acc, Context);
 build_auth_context([H | T], Acc, Context) ->
     AuthContext = build_auth_context(H, Context),
     build_auth_context(T, [AuthContext | Acc], Context).

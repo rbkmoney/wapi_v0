@@ -9,6 +9,7 @@
 -export([mock_assert_party_op_ctx/3]).
 -export([mock_assert_identity_op_ctx/4]).
 -export([mock_assert_destination_op_ctx/4]).
+-export([mock_assert_generic_op_ctx/3]).
 
 -export([mock_client/1]).
 -export([mock_arbiter/2]).
@@ -41,35 +42,80 @@ mock_assert_party_op_ctx(Op, PartyID, Config) ->
 
 -spec mock_assert_identity_op_ctx(_, _, _, _) -> _.
 mock_assert_identity_op_ctx(Op, IdentityID, PartyID, Config) ->
-    mock_arbiter(
-        ?assertContextMatches(
-            #bctx_v1_ContextFragment{
-                wapi = ?CTX_WAPI(?CTX_IDENTITY_OP(Op, IdentityID)),
-                wallet = [#bctx_v1_Entity{
-                    id = IdentityID,
-                    type = <<"Identity">>,
-                    party = PartyID
-                }]
-            }
-        ),
+    mock_assert_generic_op_ctx(
+        [{identity, IdentityID, PartyID}],
+        ?CTX_WAPI(?CTX_IDENTITY_OP(Op, IdentityID)),
         Config
     ).
 
 -spec mock_assert_destination_op_ctx(_, _, _, _) -> _.
 mock_assert_destination_op_ctx(Op, DestinationID, PartyID, Config) ->
+    mock_assert_generic_op_ctx(
+        [{destination, DestinationID, PartyID}],
+        ?CTX_WAPI(?CTX_DESTINAION_OP(Op, DestinationID)),
+        Config
+    ).
+
+-spec mock_assert_generic_op_ctx(_, _, _) -> _.
+mock_assert_generic_op_ctx(Entities, WapiContext, Config) ->
+    List = lists:map(fun make_entity/1, Entities),
     mock_arbiter(
         ?assertContextMatches(
             #bctx_v1_ContextFragment{
-                wapi = ?CTX_WAPI(?CTX_DESTINAION_OP(Op, DestinationID)),
-                wallet = [#bctx_v1_Entity{
-                    id = DestinationID,
-                    type = <<"Destination">>,
-                    party = PartyID
-                }]
+                wapi = WapiContext,
+                wallet = List
             }
         ),
         Config
     ).
+
+%%
+
+make_entity({identity, ID, OwnerID}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"Identity">>,
+        party = OwnerID
+    };
+make_entity({wallet, ID, OwnerID}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"Wallet">>,
+        party = OwnerID,
+        wallet = #bctx_v1_WalletAttrs{}
+    };
+make_entity({destination, ID, OwnerID}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"Destination">>,
+        party = OwnerID
+    };
+make_entity({report, ID, Data = #{identity := IdentityID}}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"WalletReport">>,
+        wallet = #bctx_v1_WalletAttrs{
+            identity = IdentityID,
+            report = wapi_handler_utils:maybe_with(files, Data, fun build_report_attrs/1)
+        }
+    };
+make_entity({webhook, ID, Data = #{identity := IdentityID}}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"WalletWebhook">>,
+        wallet = #bctx_v1_WalletAttrs{
+            identity = IdentityID,
+            wallet = maps:get(wallet, Data, undefined)
+        }
+    }.
+
+build_set(L) when is_list(L) ->
+    ordsets:from_list(L).
+
+build_report_attrs(Attrs) when is_list(Attrs) ->
+    #bctx_v1_WalletReportAttrs{
+        files = build_set(Attrs)
+    }.
 
 %%
 
