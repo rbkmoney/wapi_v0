@@ -9,6 +9,9 @@
 -export([mock_assert_party_op_ctx/3]).
 -export([mock_assert_identity_op_ctx/4]).
 -export([mock_assert_destination_op_ctx/4]).
+-export([mock_assert_wallet_op_ctx/4]).
+-export([mock_assert_withdrawal_op_ctx/4]).
+-export([mock_assert_w2w_transfer_op_ctx/4]).
 -export([mock_assert_generic_op_ctx/3]).
 
 -export([mock_client/1]).
@@ -56,6 +59,30 @@ mock_assert_destination_op_ctx(Op, DestinationID, PartyID, Config) ->
         Config
     ).
 
+-spec mock_assert_wallet_op_ctx(_, _, _, _) -> _.
+mock_assert_wallet_op_ctx(Op, WalletID, PartyID, Config) ->
+    mock_assert_generic_op_ctx(
+        [{wallet, WalletID, PartyID}],
+        ?CTX_WAPI(?CTX_WALLET_OP(Op, WalletID)),
+        Config
+    ).
+
+-spec mock_assert_withdrawal_op_ctx(_, _, _, _) -> _.
+mock_assert_withdrawal_op_ctx(Op, WithdrawalID, PartyID, Config) ->
+    mock_assert_generic_op_ctx(
+        [{withdrawal, WithdrawalID, PartyID}],
+        ?CTX_WAPI(?CTX_WITHDRAWAL_OP(Op, WithdrawalID)),
+        Config
+    ).
+
+-spec mock_assert_w2w_transfer_op_ctx(_, _, _, _) -> _.
+mock_assert_w2w_transfer_op_ctx(Op, W2WTransferID, PartyID, Config) ->
+    mock_assert_generic_op_ctx(
+        [{w2w_transfer, W2WTransferID, PartyID}],
+        ?CTX_WAPI(?CTX_W2W_TRANSFER_OP(Op, W2WTransferID)),
+        Config
+    ).
+
 -spec mock_assert_generic_op_ctx(_, _, _) -> _.
 mock_assert_generic_op_ctx(Entities, WapiContext, Config) ->
     List = lists:map(fun make_entity/1, Entities),
@@ -83,6 +110,18 @@ make_entity({wallet, ID, OwnerID}) ->
         type = <<"Wallet">>,
         party = OwnerID,
         wallet = #bctx_v1_WalletAttrs{}
+    };
+make_entity({withdrawal, ID, OwnerID}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"Withdrawal">>,
+        party = OwnerID
+    };
+make_entity({w2w_transfer, ID, OwnerID}) ->
+    #bctx_v1_Entity{
+        id = ID,
+        type = <<"W2WTransfer">>,
+        party = OwnerID
     };
 make_entity({destination, ID, OwnerID}) ->
     #bctx_v1_Entity{

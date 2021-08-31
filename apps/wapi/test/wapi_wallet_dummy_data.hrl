@@ -158,6 +158,12 @@
     masked_pan = ?LAST_DIGITS(Pan)
 }).
 
+-define(RESOURCE_BANK_CARD,
+    {bank_card, #'ResourceBankCard'{
+        bank_card = ?BANK_CARD
+    }}
+).
+
 -define(RESOURCE, {bank_card, ?BANK_CARD}).
 
 -define(BIN(CardNumber), string:slice(CardNumber, 0, 6)).
@@ -171,7 +177,7 @@
     name = ?STRING,
     status = ?DESTINATION_STATUS,
     account = ?ACCOUNT,
-    resource = ?RESOURCE,
+    resource = ?RESOURCE_BANK_CARD,
     external_id = ?STRING,
     created_at = ?TIMESTAMP,
     context = ?DEFAULT_CONTEXT(PartyID)
@@ -535,12 +541,6 @@
                 }
             ])}
 }).
-
--define(RESOURCE_BANK_CARD,
-    {bank_card, #'ResourceBankCard'{
-        bank_card = ?BANK_CARD
-    }}
-).
 
 -define(RAW_RESOURCE,
     {resource, #'p2p_transfer_RawResource'{

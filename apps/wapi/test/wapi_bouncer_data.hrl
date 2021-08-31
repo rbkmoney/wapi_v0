@@ -29,6 +29,21 @@
     destination = DestinaionID
 }).
 
+-define(CTX_WALLET_OP(ID, WalletID), #bctx_v1_WalletAPIOperation{
+    id = ID,
+    wallet = WalletID
+}).
+
+-define(CTX_WITHDRAWAL_OP(ID, WithdrawalID), #bctx_v1_WalletAPIOperation{
+    id = ID,
+    withdrawal = WithdrawalID
+}).
+
+-define(CTX_W2W_TRANSFER_OP(ID, W2WTransferID), #bctx_v1_WalletAPIOperation{
+    id = ID,
+    w2w_transfer = W2WTransferID
+}).
+
 -define(assertContextMatches(Expect), fun(Context) ->
     try
         ?assertMatch(Expect, Context),

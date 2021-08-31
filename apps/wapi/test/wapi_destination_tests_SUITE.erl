@@ -206,7 +206,7 @@ get_destination_ok_test(C) ->
 -spec get_destination_fail_notfound_test(config()) -> _.
 get_destination_fail_notfound_test(C) ->
     get_destination_start_mocks(C, fun() -> throw(#fistful_DestinationNotFound{}) end),
-    wapi_ct_helper_bouncer:judge_always_forbidden(),
+    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     ?assertEqual(
         {error, {404, #{}}},
         get_destination_call_api(C)

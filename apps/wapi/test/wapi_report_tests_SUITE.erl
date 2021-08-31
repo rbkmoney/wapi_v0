@@ -205,7 +205,7 @@ get_reports_ok_test(C) ->
 -spec reports_with_wrong_identity_ok_test(config()) -> _.
 reports_with_wrong_identity_ok_test(C) ->
     IdentityID = <<"WrongIdentity">>,
-    wapi_ct_helper_bouncer:judge_always_forbidden(),
+    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_report, fun

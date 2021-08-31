@@ -839,7 +839,7 @@ prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, 
     end,
     Authorize = fun() ->
         Prototypes = [{
-            operation, #{destination => WithdrawalId, id => OperationID}},
+            operation, #{withdrawal => WithdrawalId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
@@ -859,7 +859,7 @@ prepare(OperationID = 'GetWithdrawalByExternalID', Req = #{'externalID' := Exter
     end,
     Authorize = fun() ->
         Prototypes = [{
-            operation, #{destination => WithdrawalId, id => OperationID}},
+            operation, #{withdrawal => WithdrawalId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
@@ -1081,7 +1081,12 @@ prepare(OperationID = 'CreateW2WTransfer', Req = #{'W2WTransferParameters' := Pa
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
+        respond_if_any_undefined_in_auth_context(
+            AuthContext,
+            wapi_handler_utils:reply_ok(
+                422,
+                wapi_handler_utils:get_error_msg(<<"No such wallet sender">>)
+            )),
         case wapi_w2w_backend:create_transfer(Params, Context) of
             {ok, W2WTransfer} ->
                 wapi_handler_utils:reply_ok(202, W2WTransfer);

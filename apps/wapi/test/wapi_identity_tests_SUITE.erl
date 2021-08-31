@@ -246,7 +246,7 @@ get_identity(C) ->
 
 -spec get_identity_notfound(config()) -> _.
 get_identity_notfound(C) ->
-    wapi_ct_helper_bouncer:judge_always_forbidden(),
+    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_identity, fun('Get', _) -> {throwing, #fistful_IdentityNotFound{}} end}
