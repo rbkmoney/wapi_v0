@@ -73,7 +73,7 @@ get_subject_id(?authorized(#{auth_data := AuthData} = Context)) ->
                     PartyId;
                 undefined ->
                     get_subject_id(?authorized(maps:without([auth_data], Context)))
-                end
+            end
     end;
 get_subject_id(?authorized(#{legacy := Context})) ->
     uac_authorizer_jwt:get_subject_id(Context).
@@ -385,7 +385,9 @@ maybe_grant_wapi_roles(Claims) ->
             Claims;
         #{<<"common-api">> := _} ->
             Hierarchy = wapi_auth:get_resource_hierarchy(),
-            Claims#{<<"resource_access">> => #{?DOMAIN => #{<<"roles">> => uac_acl:encode(hierarchy_to_acl(Hierarchy))}}};
+            Claims#{
+                <<"resource_access">> => #{?DOMAIN => #{<<"roles">> => uac_acl:encode(hierarchy_to_acl(Hierarchy))}}
+            };
         _ ->
             undefined
     end.

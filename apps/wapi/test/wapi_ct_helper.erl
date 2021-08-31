@@ -93,8 +93,8 @@ init_suite(Module, Config) ->
         start_app(scoper) ++
             start_app(woody) ++
             start_app({wapi, Config}) ++
-        wapi_ct_helper_tk:mock_service(wapi_ct_helper_tk:user_session_handler(), SupPid),
-        wapi_ct_helper_bouncer:mock_client(SupPid),
+            wapi_ct_helper_tk:mock_service(wapi_ct_helper_tk:user_session_handler(), SupPid),
+    wapi_ct_helper_bouncer:mock_client(SupPid),
     [{apps, lists:reverse(Apps1)}, {suite_test_sup, SupPid} | Config].
 
 -spec start_app(app_name()) -> [app_name()].

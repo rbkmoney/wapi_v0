@@ -166,7 +166,6 @@ prepare(
     _Opts
 ) ->
     not_implemented();
-
 %% Identities
 prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
     Authorize = fun() ->
@@ -193,11 +192,12 @@ prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Context, _Opts) ->
-    {ResultIdentity, ResultOwner} = case wapi_identity_backend:get_identity(IdentityId, Context) of
-        {ok, Identity, Owner} -> {Identity, Owner};
-        {error, {identity, notfound}} -> {undefined, undefined};
-        {error, {identity, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultIdentity, ResultOwner} =
+        case wapi_identity_backend:get_identity(IdentityId, Context) of
+            {ok, Identity, Owner} -> {Identity, Owner};
+            {error, {identity, notfound}} -> {undefined, undefined};
+            {error, {identity, unauthorized}} -> {undefined, undefined}
+        end,
     Authorize = fun() ->
         Prototypes = [
             {operation, #{identity => IdentityId, id => OperationID}},
@@ -213,14 +213,18 @@ prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Contex
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, Opts) ->
     Authorize = fun() ->
-        PartyID = case maps:get(<<"partyID">>, Params, undefined) of
-            undefined ->
-                wapi_handler_utils:get_owner(Context);
-            ID ->
-                ID
-        end,
-        Prototypes = [{
-            operation, #{party => PartyID, id => OperationID}}
+        PartyID =
+            case maps:get(<<"partyID">>, Params, undefined) of
+                undefined ->
+                    wapi_handler_utils:get_owner(Context);
+                ID ->
+                    ID
+            end,
+        Prototypes = [
+            {
+                operation,
+                #{party => PartyID, id => OperationID}
+            }
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -244,7 +248,12 @@ prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, 
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'ListIdentityChallenges', Req = #{'identityID' := IdentityId, 'status' := Status}, Context, _Opts) ->
+prepare(
+    OperationID = 'ListIdentityChallenges',
+    Req = #{'identityID' := IdentityId, 'status' := Status},
+    Context,
+    _Opts
+) ->
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -378,7 +387,6 @@ prepare(OperationID = 'GetIdentityChallengeEvent', Req = #{'identityID' := Ident
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Wallets
 prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
     AuthContext = build_auth_context(
@@ -413,11 +421,12 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Opts) ->
-    {ResultWallet, ResultWalletOwner} = case wapi_wallet_backend:get(WalletId, Context) of
-        {ok, Wallet, Owner} -> {Wallet, Owner};
-        {error, {wallet, notfound}} -> {undefined, undefined};
-        {error, {wallet, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultWallet, ResultWalletOwner} =
+        case wapi_wallet_backend:get(WalletId, Context) of
+            {ok, Wallet, Owner} -> {Wallet, Owner};
+            {error, {wallet, notfound}} -> {undefined, undefined};
+            {error, {wallet, unauthorized}} -> {undefined, undefined}
+        end,
     Authorize = fun() ->
         Prototypes = [
             {operation, #{wallet => WalletId, id => OperationID}},
@@ -432,15 +441,19 @@ prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Op
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetWalletByExternalID', Req = #{externalID := ExternalID}, Context, _Opts) ->
-    {ResultWallet, ResultWalletOwner, WalletId} = case wapi_wallet_backend:get_by_external_id(ExternalID, Context) of
-        {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
-        {error, {wallet, notfound}} -> {undefined, undefined, undefined};
-        {error, {wallet, unauthorized}} -> {undefined, undefined, undefined};
-        {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
-    end,
+    {ResultWallet, ResultWalletOwner, WalletId} =
+        case wapi_wallet_backend:get_by_external_id(ExternalID, Context) of
+            {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
+            {error, {wallet, notfound}} -> {undefined, undefined, undefined};
+            {error, {wallet, unauthorized}} -> {undefined, undefined, undefined};
+            {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{wallet => WalletId, id => OperationID}},
+        Prototypes = [
+            {
+                operation,
+                #{wallet => WalletId, id => OperationID}
+            },
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, {party, ResultWalletOwner})]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
@@ -533,7 +546,6 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Destinations
 prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
     AuthContext = build_auth_context(
@@ -568,15 +580,25 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId}, Context, _Opts) ->
-    {ResultDestination, ResultDestinationOwner} = case wapi_destination_backend:get(DestinationId, Context) of
-        {ok, Destination, Owner} -> {Destination, Owner};
-        {error, {destination, notfound}} -> {undefined, undefined};
-        {error, {destination, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultDestination, ResultDestinationOwner} =
+        case wapi_destination_backend:get(DestinationId, Context) of
+            {ok, Destination, Owner} -> {Destination, Owner};
+            {error, {destination, notfound}} -> {undefined, undefined};
+            {error, {destination, unauthorized}} -> {undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{destination => DestinationId, id => OperationID}},
-            {wallet, [wapi_bouncer_context:build_wallet_entity(destination, ResultDestination, {party, ResultDestinationOwner})]}
+        Prototypes = [
+            {
+                operation,
+                #{destination => DestinationId, id => OperationID}
+            },
+            {wallet, [
+                wapi_bouncer_context:build_wallet_entity(
+                    destination,
+                    ResultDestination,
+                    {party, ResultDestinationOwner}
+                )
+            ]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
@@ -587,16 +609,26 @@ prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := ExternalID}, Context, _Opts) ->
-    {ResultDestination, ResultDestinationOwner, DestinationId} = case wapi_destination_backend:get_by_external_id(ExternalID, Context) of
-        {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
-        {error, {destination, notfound}} -> {undefined, undefined, undefined};
-        {error, {destination, unauthorized}} -> {undefined, undefined, undefined};
-        {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
-    end,
+    {ResultDestination, ResultDestinationOwner, DestinationId} =
+        case wapi_destination_backend:get_by_external_id(ExternalID, Context) of
+            {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
+            {error, {destination, notfound}} -> {undefined, undefined, undefined};
+            {error, {destination, unauthorized}} -> {undefined, undefined, undefined};
+            {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{destination => DestinationId, id => OperationID}},
-            {wallet, [wapi_bouncer_context:build_wallet_entity(destination, ResultDestination, {party, ResultDestinationOwner})]}
+        Prototypes = [
+            {
+                operation,
+                #{destination => DestinationId, id => OperationID}
+            },
+            {wallet, [
+                wapi_bouncer_context:build_wallet_entity(
+                    destination,
+                    ResultDestination,
+                    {party, ResultDestinationOwner}
+                )
+            ]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
@@ -606,7 +638,12 @@ prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := Exte
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateDestination', Req = #{'Destination' := Params = #{<<"identity">> := IdentityID}}, Context, Opts) ->
+prepare(
+    OperationID = 'CreateDestination',
+    Req = #{'Destination' := Params = #{<<"identity">> := IdentityID}},
+    Context,
+    Opts
+) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -674,12 +711,13 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Withdrawals
 prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params}, Context, _Opts) ->
     AuthContext = build_auth_context(
         [
-            wapi_handler_utils:maybe_with(<<"destinationID">>, Params, fun(DestinationID) -> {destination, DestinationID} end),
+            wapi_handler_utils:maybe_with(<<"destinationID">>, Params, fun(DestinationID) ->
+                {destination, DestinationID}
+            end),
             {wallet, maps:get(<<"walletID">>, Params)}
         ],
         [],
@@ -832,15 +870,21 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
-    {ResultWithdrawal, ResultWithdrawalOwner} = case wapi_withdrawal_backend:get(WithdrawalId, Context) of
-        {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
-        {error, {withdrawal, notfound}} -> {undefined, undefined};
-        {error, {withdrawal, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultWithdrawal, ResultWithdrawalOwner} =
+        case wapi_withdrawal_backend:get(WithdrawalId, Context) of
+            {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
+            {error, {withdrawal, notfound}} -> {undefined, undefined};
+            {error, {withdrawal, unauthorized}} -> {undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{withdrawal => WithdrawalId, id => OperationID}},
-            {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
+        Prototypes = [
+            {
+                operation,
+                #{withdrawal => WithdrawalId, id => OperationID}
+            },
+            {wallet, [
+                wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})
+            ]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
@@ -851,16 +895,22 @@ prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, 
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetWithdrawalByExternalID', Req = #{'externalID' := ExternalID}, Context, _Opts) ->
-    {ResultWithdrawal, ResultWithdrawalOwner, WithdrawalId} = case wapi_withdrawal_backend:get_by_external_id(ExternalID, Context) of
-        {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
-        {error, {withdrawal, notfound}} -> {undefined, undefined, undefined};
-        {error, {withdrawal, unauthorized}} -> {undefined, undefined, undefined};
-        {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
-    end,
+    {ResultWithdrawal, ResultWithdrawalOwner, WithdrawalId} =
+        case wapi_withdrawal_backend:get_by_external_id(ExternalID, Context) of
+            {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
+            {error, {withdrawal, notfound}} -> {undefined, undefined, undefined};
+            {error, {withdrawal, unauthorized}} -> {undefined, undefined, undefined};
+            {error, {external_id, {unknown_external_id, ExternalID}}} -> {undefined, undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{withdrawal => WithdrawalId, id => OperationID}},
-            {wallet, [wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})]}
+        Prototypes = [
+            {
+                operation,
+                #{withdrawal => WithdrawalId, id => OperationID}
+            },
+            {wallet, [
+                wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})
+            ]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
@@ -961,7 +1011,6 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Deposits
 prepare(OperationID = 'ListDeposits', Req, Context, _Opts) ->
     AuthContext = build_auth_context(
@@ -1068,9 +1117,13 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% W2W
-prepare(OperationID = 'CreateW2WTransfer', Req = #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}}, Context, _Opts) ->
+prepare(
+    OperationID = 'CreateW2WTransfer',
+    Req = #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}},
+    Context,
+    _Opts
+) ->
     AuthContext = build_auth_context([{wallet, SenderID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -1086,7 +1139,8 @@ prepare(OperationID = 'CreateW2WTransfer', Req = #{'W2WTransferParameters' := Pa
             wapi_handler_utils:reply_ok(
                 422,
                 wapi_handler_utils:get_error_msg(<<"No such wallet sender">>)
-            )),
+            )
+        ),
         case wapi_w2w_backend:create_transfer(Params, Context) of
             {ok, W2WTransfer} ->
                 wapi_handler_utils:reply_ok(202, W2WTransfer);
@@ -1134,15 +1188,25 @@ prepare(OperationID = 'CreateW2WTransfer', Req = #{'W2WTransferParameters' := Pa
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
-    {ResultW2WTransfer, ResultW2WTransferOwner} = case wapi_w2w_backend:get_transfer(W2WTransferId, Context) of
-        {ok, W2WTransfer, Owner} -> {W2WTransfer, Owner};
-        {error, {w2w_transfer, {unknown_w2w_transfer, _ID}}} -> {undefined, undefined};
-        {error, {w2w_transfer, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultW2WTransfer, ResultW2WTransferOwner} =
+        case wapi_w2w_backend:get_transfer(W2WTransferId, Context) of
+            {ok, W2WTransfer, Owner} -> {W2WTransfer, Owner};
+            {error, {w2w_transfer, {unknown_w2w_transfer, _ID}}} -> {undefined, undefined};
+            {error, {w2w_transfer, unauthorized}} -> {undefined, undefined}
+        end,
     Authorize = fun() ->
-        Prototypes = [{
-            operation, #{w2w_transfer => W2WTransferId, id => OperationID}},
-            {wallet, [wapi_bouncer_context:build_wallet_entity(w2w_transfer, ResultW2WTransfer, {party, ResultW2WTransferOwner})]}
+        Prototypes = [
+            {
+                operation,
+                #{w2w_transfer => W2WTransferId, id => OperationID}
+            },
+            {wallet, [
+                wapi_bouncer_context:build_wallet_entity(
+                    w2w_transfer,
+                    ResultW2WTransfer,
+                    {party, ResultW2WTransferOwner}
+                )
+            ]}
         ],
         Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
         {ok, Resolution}
@@ -1152,7 +1216,6 @@ prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId},
         wapi_handler_utils:reply_ok(200, ResultW2WTransfer)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% P2P
 prepare('QuoteP2PTransfer', #{'QuoteParameters' := _Params}, _Context, _Opts) ->
     not_implemented();
@@ -1198,13 +1261,21 @@ prepare(
     _Opts
 ) ->
     not_implemented();
-
 %% Webhooks
-prepare(OperationID = 'CreateWebhook', Req = #{'Webhook' := #{<<"identityID">> := IdentityId, <<"scope">> := Scope}}, Context, _Opts) ->
-    AuthContext = build_auth_context([
-        {identity, IdentityId},
-        wapi_handler_utils:maybe_with(<<"walletID">>, Scope, fun(WalletID) -> {wallet, WalletID} end)
-    ], [], Context),
+prepare(
+    OperationID = 'CreateWebhook',
+    Req = #{'Webhook' := #{<<"identityID">> := IdentityId, <<"scope">> := Scope}},
+    Context,
+    _Opts
+) ->
+    AuthContext = build_auth_context(
+        [
+            {identity, IdentityId},
+            wapi_handler_utils:maybe_with(<<"walletID">>, Scope, fun(WalletID) -> {wallet, WalletID} end)
+        ],
+        [],
+        Context
+    ),
     Authorize = fun() ->
         Prototypes = [
             {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
@@ -1313,7 +1384,6 @@ prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, web
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Reports
 prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context, _Opts) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
@@ -1332,7 +1402,8 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
                 <<"errorType">> => <<"NotFound">>,
                 <<"name">> => <<"identity">>,
                 <<"description">> => <<"identity not found">>
-        })),
+            })
+        ),
         case wapi_report_backend:create_report(Req, Context) of
             {ok, Report} ->
                 wapi_handler_utils:reply_ok(201, Report);
@@ -1373,20 +1444,26 @@ prepare(
     _Opts
 ) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
-    ResultReport = case wapi_report_backend:get_report(ReportId, IdentityID, Context) of
-        {ok, Report} ->
-            Report;
-        {error, {identity, notfound}} ->
-            undefined;
-        {error, {identity, unauthorized}} ->
-            undefined;
-        {error, notfound} ->
-            undefined
-    end,
+    ResultReport =
+        case wapi_report_backend:get_report(ReportId, IdentityID, Context) of
+            {ok, Report} ->
+                Report;
+            {error, {identity, notfound}} ->
+                undefined;
+            {error, {identity, unauthorized}} ->
+                undefined;
+            {error, notfound} ->
+                undefined
+        end,
     Authorize = fun() ->
         Prototypes = [
             {operation, with_auth_context(operation, #{report => ReportId, id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [wapi_bouncer_context:build_wallet_entity(report, ResultReport, {identity, IdentityID})], AuthContext)}
+            {wallet,
+                with_auth_context(
+                    wallet,
+                    [wapi_bouncer_context:build_wallet_entity(report, ResultReport, {identity, IdentityID})],
+                    AuthContext
+                )}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1398,7 +1475,8 @@ prepare(
                 <<"errorType">> => <<"NotFound">>,
                 <<"name">> => <<"identity">>,
                 <<"description">> => <<"identity not found">>
-        })),
+            })
+        ),
         wapi_handler:respond_if_undefined(ResultReport, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultReport)
     end,
@@ -1420,7 +1498,8 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
                 <<"errorType">> => <<"NotFound">>,
                 <<"name">> => <<"identity">>,
                 <<"description">> => <<"identity not found">>
-        })),
+            })
+        ),
         case wapi_report_backend:get_reports(Req, Context) of
             {ok, ReportList} ->
                 wapi_handler_utils:reply_ok(200, ReportList);
@@ -1467,7 +1546,6 @@ prepare(OperationID = 'DownloadFile', Req = #{fileID := FileId}, Context, _Opts)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Residences
 prepare(OperationID = 'GetResidence', Req = #{'residence' := ResidenceId}, Context, _Opts) ->
     Authorize = fun() ->
@@ -1482,7 +1560,6 @@ prepare(OperationID = 'GetResidence', Req = #{'residence' := ResidenceId}, Conte
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Currencies
 prepare(OperationID = 'GetCurrency', Req = #{'currencyID' := CurrencyId}, Context, _Opts) ->
     Authorize = fun() ->
@@ -1530,78 +1607,94 @@ build_auth_context([H | T], Acc, Context) ->
     build_auth_context(T, [AuthContext | Acc], Context).
 
 build_auth_context({identity, IdentityID}, Context) ->
-    {ResultIdentity, ResultIdentityOwner} = case wapi_identity_backend:get_identity(IdentityID, Context) of
-        {ok, Identity, Owner} -> {Identity, Owner};
-        {error, {identity, notfound}} -> {undefined, undefined};
-        {error, {identity, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultIdentity, ResultIdentityOwner} =
+        case wapi_identity_backend:get_identity(IdentityID, Context) of
+            {ok, Identity, Owner} -> {Identity, Owner};
+            {error, {identity, notfound}} -> {undefined, undefined};
+            {error, {identity, unauthorized}} -> {undefined, undefined}
+        end,
     {identity, {IdentityID, ResultIdentity, ResultIdentityOwner}};
 build_auth_context({wallet, WalletID}, Context) ->
-    {ResultWallet, ResultWalletOwner} = case wapi_wallet_backend:get(WalletID, Context) of
-        {ok, Wallet, Owner} -> {Wallet, Owner};
-        {error, {wallet, notfound}} -> {undefined, undefined};
-        {error, {wallet, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultWallet, ResultWalletOwner} =
+        case wapi_wallet_backend:get(WalletID, Context) of
+            {ok, Wallet, Owner} -> {Wallet, Owner};
+            {error, {wallet, notfound}} -> {undefined, undefined};
+            {error, {wallet, unauthorized}} -> {undefined, undefined}
+        end,
     {wallet, {WalletID, ResultWallet, ResultWalletOwner}};
 build_auth_context({destination, DestinationID}, Context) ->
-    {ResultDestination, ResultDestinationOwner} = case wapi_destination_backend:get(DestinationID, Context) of
-        {ok, Destination, Owner} -> {Destination, Owner};
-        {error, {destination, notfound}} -> {undefined, undefined};
-        {error, {destination, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultDestination, ResultDestinationOwner} =
+        case wapi_destination_backend:get(DestinationID, Context) of
+            {ok, Destination, Owner} -> {Destination, Owner};
+            {error, {destination, notfound}} -> {undefined, undefined};
+            {error, {destination, unauthorized}} -> {undefined, undefined}
+        end,
     {destination, {DestinationID, ResultDestination, ResultDestinationOwner}};
 build_auth_context({withdrawal, WithdrawalId}, Context) ->
-    {ResultWithdrawal, ResultWithdrawalOwner} = case wapi_withdrawal_backend:get(WithdrawalId, Context) of
-        {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
-        {error, {withdrawal, notfound}} -> {undefined, undefined};
-        {error, {withdrawal, unauthorized}} -> {undefined, undefined}
-    end,
+    {ResultWithdrawal, ResultWithdrawalOwner} =
+        case wapi_withdrawal_backend:get(WithdrawalId, Context) of
+            {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
+            {error, {withdrawal, notfound}} -> {undefined, undefined};
+            {error, {withdrawal, unauthorized}} -> {undefined, undefined}
+        end,
     {withdrawal, {WithdrawalId, ResultWithdrawal, ResultWithdrawalOwner}};
 build_auth_context({webhook, WebhookId, IdentityID}, Context) ->
-    ResultWebhook = case wapi_webhook_backend:get_webhook(WebhookId, IdentityID, Context) of
-        {ok, Webhook} -> Webhook;
-        {error, notfound} -> {undefined, undefined};
-        {error, {webhook, notfound}} -> {undefined, undefined};
-        {error, {identity, notfound}} -> {undefined, undefined};
-        {error, {identity, unauthorized}} -> {undefined, undefined}
-    end,
+    ResultWebhook =
+        case wapi_webhook_backend:get_webhook(WebhookId, IdentityID, Context) of
+            {ok, Webhook} -> Webhook;
+            {error, notfound} -> {undefined, undefined};
+            {error, {webhook, notfound}} -> {undefined, undefined};
+            {error, {identity, notfound}} -> {undefined, undefined};
+            {error, {identity, unauthorized}} -> {undefined, undefined}
+        end,
     {webhook, {WebhookId, ResultWebhook}}.
 
 with_auth_context(operation, OpContext, AuthContext) ->
-    lists:foldl(fun
-        ({identity, {IdentityID, _Identity, _Owner}}, Acc) ->
-            Acc#{identity => IdentityID};
-        ({wallet, {WalletID, _Wallet, _Owner}}, Acc) ->
-            Acc#{wallet => WalletID};
-        ({destination, {DestinationID, _Destination, _Owner}}, Acc) ->
-            Acc#{destination => DestinationID};
-        ({withdrawal, {WithdrawalID, _Withdrawal, _Owner}}, Acc) ->
-            Acc#{withdrawal => WithdrawalID};
-        ({webhook, {WebhookId, _ResultWebhook}}, Acc) ->
-            Acc#{webhook => WebhookId}
-    end, OpContext, AuthContext);
+    lists:foldl(
+        fun
+            ({identity, {IdentityID, _Identity, _Owner}}, Acc) ->
+                Acc#{identity => IdentityID};
+            ({wallet, {WalletID, _Wallet, _Owner}}, Acc) ->
+                Acc#{wallet => WalletID};
+            ({destination, {DestinationID, _Destination, _Owner}}, Acc) ->
+                Acc#{destination => DestinationID};
+            ({withdrawal, {WithdrawalID, _Withdrawal, _Owner}}, Acc) ->
+                Acc#{withdrawal => WithdrawalID};
+            ({webhook, {WebhookId, _ResultWebhook}}, Acc) ->
+                Acc#{webhook => WebhookId}
+        end,
+        OpContext,
+        AuthContext
+    );
 with_auth_context(wallet, Entities, AuthContext) ->
-    lists:foldl(fun
-        ({identity, {_IdentityID, Identity, Owner}}, Acc) ->
-            [wapi_bouncer_context:build_wallet_entity(identity, Identity, {party, Owner}) | Acc];
-        ({wallet, {_WalletID, Wallet, Owner}}, Acc) ->
-            [wapi_bouncer_context:build_wallet_entity(wallet, Wallet, {party, Owner}) | Acc];
-        ({destination, {_DestinationID, Destination, Owner}}, Acc) ->
-            [wapi_bouncer_context:build_wallet_entity(destination, Destination, {party, Owner}) | Acc];
-        ({withdrawal, {_WithdrawalID, Withdrawal, Owner}}, Acc) ->
-            [wapi_bouncer_context:build_wallet_entity(withdrawal, Withdrawal, {party, Owner}) | Acc];
-        ({webhook, {_WebhookID, Webhook}}, Acc) ->
-            [wapi_bouncer_context:build_wallet_entity(webhook, Webhook) | Acc]
-    end, Entities, AuthContext).
+    lists:foldl(
+        fun
+            ({identity, {_IdentityID, Identity, Owner}}, Acc) ->
+                [wapi_bouncer_context:build_wallet_entity(identity, Identity, {party, Owner}) | Acc];
+            ({wallet, {_WalletID, Wallet, Owner}}, Acc) ->
+                [wapi_bouncer_context:build_wallet_entity(wallet, Wallet, {party, Owner}) | Acc];
+            ({destination, {_DestinationID, Destination, Owner}}, Acc) ->
+                [wapi_bouncer_context:build_wallet_entity(destination, Destination, {party, Owner}) | Acc];
+            ({withdrawal, {_WithdrawalID, Withdrawal, Owner}}, Acc) ->
+                [wapi_bouncer_context:build_wallet_entity(withdrawal, Withdrawal, {party, Owner}) | Acc];
+            ({webhook, {_WebhookID, Webhook}}, Acc) ->
+                [wapi_bouncer_context:build_wallet_entity(webhook, Webhook) | Acc]
+        end,
+        Entities,
+        AuthContext
+    ).
 
 respond_if_any_undefined_in_auth_context(AuthContext, Respond) ->
-    case lists:any(fun
-            ({_Type, {_, undefined, _}}) -> true;
-            ({_Type, {_, undefined}}) -> true;
-            (_) -> false
-        end,
-        AuthContext
-    ) of
+    case
+        lists:any(
+            fun
+                ({_Type, {_, undefined, _}}) -> true;
+                ({_Type, {_, undefined}}) -> true;
+                (_) -> false
+            end,
+            AuthContext
+        )
+    of
         true ->
             wapi_handler:respond_if_undefined(undefined, Respond);
         false ->

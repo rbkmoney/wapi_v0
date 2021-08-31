@@ -169,21 +169,30 @@ build_wallet_entity(Type, Data) ->
 build_wallet_entity(Type, undefined, _) ->
     {Type, undefined};
 build_wallet_entity(report = Type, Params, {IDKey, ID}) ->
-    EntityID = case maps:get(<<"id">>, Params, undefined) of
-        undefined ->
-            undefined;
-        Result ->
-            genlib:to_binary(Result)
-    end,
-    {Type, maps:merge(genlib_map:compact(#{
-    IDKey => ID,
-    id => EntityID
-  }), build_wallet_entity_(Type, Params))};
+    EntityID =
+        case maps:get(<<"id">>, Params, undefined) of
+            undefined ->
+                undefined;
+            Result ->
+                genlib:to_binary(Result)
+        end,
+    {Type,
+        maps:merge(
+            genlib_map:compact(#{
+                IDKey => ID,
+                id => EntityID
+            }),
+            build_wallet_entity_(Type, Params)
+        )};
 build_wallet_entity(Type, Params, {IDKey, ID}) ->
-  {Type, maps:merge(genlib_map:compact(#{
-    IDKey => ID,
-    id => maps:get(<<"id">>, Params, undefined)
-  }), build_wallet_entity_(Type, Params))}.
+    {Type,
+        maps:merge(
+            genlib_map:compact(#{
+                IDKey => ID,
+                id => maps:get(<<"id">>, Params, undefined)
+            }),
+            build_wallet_entity_(Type, Params)
+        )}.
 
 build_wallet_entity_(deposit, #{<<"wallet">> := WalletID}) ->
     #{wallet => WalletID};
@@ -193,7 +202,7 @@ build_wallet_entity_(webhook, Webhook = #{<<"identityID">> := Identity}) ->
     #{identity => Identity, wallet => WalletID};
 build_wallet_entity_(report, #{<<"files">> := Files}) ->
     #{files => lists:map(fun(#{<<"id">> := FileID}) -> FileID end, Files)};
-    %% identity => IdentityID,
+%% identity => IdentityID,
 build_wallet_entity_(_, _) ->
     #{}.
 

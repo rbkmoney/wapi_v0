@@ -38,7 +38,8 @@ maybe_add_userorg(External, AuthData, WoodyCtx) ->
             External
     end.
 
--spec add_requester_context(swag_server_wallet:request_context(), wapi_bouncer_context:acc()) -> wapi_bouncer_context:acc().
+-spec add_requester_context(swag_server_wallet:request_context(), wapi_bouncer_context:acc()) ->
+    wapi_bouncer_context:acc().
 add_requester_context(ReqCtx, FragmentAcc) ->
     ClientPeer = maps:get(peer, ReqCtx, #{}),
     bouncer_context_helpers:add_requester(
