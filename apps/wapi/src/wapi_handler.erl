@@ -124,7 +124,7 @@ respond_if_undefined(undefined, Response) ->
 respond_if_undefined(_, _Response) ->
     ok.
 
--spec respond_if_forbidden(Resolution, response()) -> Resolution | throw(request_result()) when
+-spec respond_if_forbidden(Resolution, request_result()) -> Resolution | throw(request_result()) when
     Resolution :: wapi_auth:resolution().
 respond_if_forbidden(forbidden, Response) ->
     throw_result(Response);

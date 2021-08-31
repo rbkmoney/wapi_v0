@@ -353,9 +353,7 @@ get_resource_hierarchy() ->
 
 -spec get_verification_options() -> uac:verification_opts().
 get_verification_options() ->
-    #{
-        domains_to_decode => [<<"common-api">>, <<"wallet-api">>]
-    }.
+    #{}.
 
 all_scopes(Key, Value, AccIn) ->
     Scopes0 = maps:fold(fun all_scopes/3, [], Value),

@@ -1154,322 +1154,50 @@ prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId},
     {ok, #{authorize => Authorize, process => Process}};
 
 %% P2P
-prepare('QuoteP2PTransfer', #{'QuoteParameters' := Params}, Context, _Opts) ->
-    case wapi_p2p_transfer_backend:quote_transfer(Params, Context) of
-        {ok, Quote} ->
-            wapi_handler_utils:reply_ok(201, Quote);
-        {error, {identity, notfound}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            );
-        {error, {identity, unauthorized}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            );
-        {error, {_, {invalid_resource_token, Type}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            });
-        {error, {sender, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid sender resource">>)
-            );
-        {error, {receiver, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid receiver resource">>)
-            );
-        {error, {p2p_transfer, forbidden_currency}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Currency not allowed">>)
-            );
-        {error, {p2p_transfer, cash_range_exceeded}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Transfer amount is out of allowed range">>)
-            );
-        {error, {p2p_transfer, operation_not_permitted}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Operation not permitted">>)
-            )
-    end;
-prepare('CreateP2PTransfer', #{'P2PTransferParameters' := Params}, Context, _Opts) ->
-    case wapi_p2p_transfer_backend:create_transfer(Params, Context) of
-        {ok, P2PTransfer} ->
-            wapi_handler_utils:reply_ok(202, P2PTransfer);
-        {error, {external_id_conflict, ID, ExternalID}} ->
-            wapi_handler_utils:logic_error(external_id_conflict, {ID, ExternalID});
-        {error, {identity, notfound}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            );
-        {error, {identity, unauthorized}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            );
-        {error, {_, {invalid_resource_token, Type}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            });
-        {error, {sender, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid sender resource">>)
-            );
-        {error, {receiver, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid receiver resource">>)
-            );
-        {error, {token, {not_verified, _}}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Token can't be verified">>)
-            );
-        {error, {p2p_transfer, operation_not_permitted}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Operation not permitted">>)
-            );
-        {error, {p2p_transfer, forbidden_currency}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Currency not allowed">>)
-            );
-        {error, {p2p_transfer, cash_range_exceeded}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Transfer amount is out of allowed range">>)
-            )
-        % note: thrift has less expressive errors
-    end;
-prepare('GetP2PTransfer', #{p2pTransferID := ID}, Context, _Opts) ->
-    case wapi_p2p_transfer_backend:get_transfer(ID, Context) of
-        {ok, P2PTransfer} ->
-            wapi_handler_utils:reply_ok(200, P2PTransfer);
-        {error, {p2p_transfer, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_transfer, notfound}} ->
-            wapi_handler_utils:reply_ok(404)
-    end;
-prepare('GetP2PTransferEvents', #{p2pTransferID := ID, continuationToken := CT}, Context, _Opts) ->
-    case wapi_p2p_transfer_backend:get_transfer_events(ID, CT, Context) of
-        {ok, P2PTransferEvents} ->
-            wapi_handler_utils:reply_ok(200, P2PTransferEvents);
-        {error, {p2p_transfer, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_transfer, notfound}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {token, {not_verified, _}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidToken">>,
-                <<"name">> => <<"continuationToken">>,
-                <<"description">> => <<"Token can't be verified">>
-            });
-        {error, {token, {unsupported_version, _}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidToken">>,
-                <<"name">> => <<"continuationToken">>,
-                <<"description">> => <<"Token unsupported version">>
-            })
-    end;
+prepare('QuoteP2PTransfer', #{'QuoteParameters' := _Params}, _Context, _Opts) ->
+    not_implemented();
+prepare('CreateP2PTransfer', #{'P2PTransferParameters' := _Params}, _Context, _Opts) ->
+    not_implemented();
+prepare('GetP2PTransfer', #{p2pTransferID := _ID}, _Context, _Opts) ->
+    not_implemented();
+prepare('GetP2PTransferEvents', #{p2pTransferID := _ID, continuationToken := _CT}, _Context, _Opts) ->
+    not_implemented();
 %% P2P Templates
 
-prepare('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' := Params}, Context, Opts) ->
-    case wapi_p2p_template_backend:create(Params, Context) of
-        {ok, P2PTemplate = #{<<"id">> := TemplateID}} ->
-            wapi_handler_utils:reply_ok(
-                201,
-                P2PTemplate,
-                get_location('GetP2PTransferTemplateByID', [TemplateID], Opts)
-            );
-        {error, {identity, unauthorized}} ->
-            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>));
-        {error, {identity, notfound}} ->
-            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>));
-        {error, inaccessible} ->
-            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Identity inaccessible">>));
-        {error, {external_id_conflict, ID, ExternalID}} ->
-            wapi_handler_utils:logic_error(external_id_conflict, {ID, ExternalID});
-        {error, {currency, notfound}} ->
-            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Currency not supported">>));
-        {error, invalid_operation_amount} ->
-            wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Invalid operation amount">>))
-    end;
-prepare('GetP2PTransferTemplateByID', #{'p2pTransferTemplateID' := P2PTemplateID}, Context, _Opts) ->
-    case wapi_p2p_template_backend:get(P2PTemplateID, Context) of
-        {ok, P2PTemplate} -> wapi_handler_utils:reply_ok(200, P2PTemplate);
-        {error, {p2p_template, notfound}} -> wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} -> wapi_handler_utils:reply_ok(404)
-    end;
-prepare('BlockP2PTransferTemplate', #{p2pTransferTemplateID := P2PTemplateID}, Context, _Opts) ->
-    case wapi_p2p_template_backend:block(P2PTemplateID, Context) of
-        ok -> wapi_handler_utils:reply_ok(204);
-        {error, {p2p_template, notfound}} -> wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} -> wapi_handler_utils:reply_ok(404)
-    end;
+prepare('CreateP2PTransferTemplate', #{'P2PTransferTemplateParameters' := _Params}, _Context, _Opts) ->
+    not_implemented();
+prepare('GetP2PTransferTemplateByID', #{'p2pTransferTemplateID' := _P2PTemplateID}, _Context, _Opts) ->
+    not_implemented();
+prepare('BlockP2PTransferTemplate', #{p2pTransferTemplateID := _P2PTemplateID}, _Context, _Opts) ->
+    not_implemented();
 prepare(
     'IssueP2PTransferTemplateAccessToken',
-    #{
-        p2pTransferTemplateID := P2PTemplateID,
-        'P2PTransferTemplateTokenRequest' := #{<<"validUntil">> := Expiration}
-    },
-    Context,
+    _Params,
+    _Context,
     _Opts
 ) ->
-    case wapi_p2p_template_backend:issue_access_token(P2PTemplateID, Expiration, Context) of
-        {ok, Token} ->
-            wapi_handler_utils:reply_ok(201, #{<<"token">> => Token, <<"validUntil">> => Expiration});
-        {error, expired} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid expiration: already expired">>)
-            );
-        {error, {p2p_template, notfound}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404)
-    end;
+    not_implemented();
 prepare(
     'IssueP2PTransferTicket',
-    #{
-        p2pTransferTemplateID := P2PTemplateID,
-        'P2PTransferTemplateTicketRequest' := #{<<"validUntil">> := Expiration}
-    },
-    Context,
+    _Params,
+    _Context,
     _Opts
 ) ->
-    case wapi_p2p_template_backend:issue_transfer_ticket(P2PTemplateID, Expiration, Context) of
-        {ok, {Token, ExpirationNew}} ->
-            wapi_handler_utils:reply_ok(201, #{<<"token">> => Token, <<"validUntil">> => ExpirationNew});
-        {error, expired} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Invalid expiration: already expired">>)
-            );
-        {error, {p2p_template, notfound}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404)
-    end;
+    not_implemented();
 prepare(
     'QuoteP2PTransferWithTemplate',
-    #{
-        p2pTransferTemplateID := P2PTemplateID,
-        'P2PTransferTemplateQuoteParameters' := Params
-    },
-    Context,
+    _Params,
+    _Context,
     _Opts
 ) ->
-    case wapi_p2p_template_backend:quote_transfer(P2PTemplateID, Params, Context) of
-        {ok, Quote} ->
-            wapi_handler_utils:reply_ok(201, Quote);
-        {error, {p2p_template, notfound}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {identity, notfound}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            );
-        {error, {forbidden_currency, _}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Currency not allowed">>)
-            );
-        {error, {forbidden_amount, _}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Amount forbidden">>)
-            );
-        {error, {operation_not_permitted, Details}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(Details)
-            );
-        {error, {_, {invalid_resource_token, Type}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            });
-        {error, {Type, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            })
-    end;
+    not_implemented();
 prepare(
     'CreateP2PTransferWithTemplate',
-    #{
-        p2pTransferTemplateID := P2PTemplateID,
-        'P2PTransferWithTemplateParameters' := Params
-    },
-    Context,
+    _Params,
+    _Context,
     _Opts
 ) ->
-    case wapi_p2p_template_backend:create_transfer(P2PTemplateID, Params, Context) of
-        {ok, P2PTransfer} ->
-            wapi_handler_utils:reply_ok(202, P2PTransfer);
-        {error, {p2p_template, notfound}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {p2p_template, unauthorized}} ->
-            wapi_handler_utils:reply_ok(404);
-        {error, {forbidden_currency, _}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Currency not allowed">>)
-            );
-        {error, {forbidden_amount, _}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"Amount forbidden">>)
-            );
-        {error, {operation_not_permitted, Details}} ->
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(Details)
-            );
-        {error, {_, {invalid_resource_token, Type}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            });
-        {error, {Type, invalid_resource}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidResourceToken">>,
-                <<"name">> => Type,
-                <<"description">> => <<"Specified resource token is invalid">>
-            });
-        {error, {token, expired}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidToken">>,
-                <<"name">> => <<"quoteToken">>,
-                <<"description">> => <<"Token expired">>
-            });
-        {error, {token, {not_verified, Error}}} ->
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"InvalidToken">>,
-                <<"name">> => <<"quoteToken">>,
-                <<"description">> => Error
-            });
-        {error, {external_id_conflict, ID}} ->
-            wapi_handler_utils:reply_ok(409, #{<<"id">> => ID})
-    end;
+    not_implemented();
 
 %% Webhooks
 prepare(OperationID = 'CreateWebhook', Req = #{'Webhook' := #{<<"identityID">> := IdentityId, <<"scope">> := Scope}}, Context, _Opts) ->
@@ -1778,7 +1506,7 @@ get_location(OperationId, Params, Opts) ->
 issue_grant_token(TokenSpec, Expiration, Context) ->
     case get_expiration_deadline(Expiration) of
         {ok, Deadline} ->
-            {ok, wapi_auth:issue_access_token(wapi_handler_utils:get_owner(Context), TokenSpec, {deadline, Deadline})};
+            {ok, wapi_auth:issue_access_token(wapi_handler_utils:get_owner(Context), TokenSpec, Deadline)};
         Error = {error, _} ->
             Error
     end.
