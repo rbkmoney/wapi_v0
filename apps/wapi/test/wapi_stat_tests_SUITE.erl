@@ -140,7 +140,7 @@ end_per_testcase(_Name, C) ->
 
 -spec list_wallets(config()) -> _.
 list_wallets(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListWallets">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListWallets">>, C),
     wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetWallets', _) -> {ok, ?STAT_RESPONCE(?STAT_WALLETS)} end}
@@ -171,7 +171,7 @@ list_wallets_bad_token_error(C) ->
 
 -spec list_withdrawals(config()) -> _.
 list_withdrawals(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListWithdrawals">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListWithdrawals">>, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetWithdrawals', _) -> {ok, ?STAT_RESPONCE(?STAT_WITHDRAWALS)} end}
@@ -202,7 +202,7 @@ list_withdrawals_bad_token_error(C) ->
 
 -spec list_deposits(config()) -> _.
 list_deposits(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDeposits">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDeposits">>, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetDeposits', _) -> {ok, ?STAT_RESPONCE(?STAT_DEPOSITS)} end}
@@ -233,7 +233,7 @@ list_deposits_bad_token_error(C) ->
 
 -spec list_destinations(config()) -> _.
 list_destinations(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDestinations">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDestinations">>, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetDestinations', _) -> {ok, ?STAT_RESPONCE(?STAT_DESTINATIONS)} end}
@@ -264,7 +264,7 @@ list_destinations_bad_token_error(C) ->
 
 -spec list_identities(config()) -> _.
 list_identities(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListIdentities">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListIdentities">>, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetIdentities', _) -> {ok, ?STAT_RESPONCE(?STAT_IDENTITIES)} end}
@@ -295,7 +295,7 @@ list_identities_bad_token_error(C) ->
 
 -spec list_deposit_revert(config) -> _.
 list_deposit_revert(Cfg) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositReverts">>, Cfg),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositReverts">>, Cfg),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetDepositReverts', _) -> {ok, ?STAT_RESPONCE(?STAT_DEPOSIT_REVERTS)} end}
@@ -326,7 +326,7 @@ list_deposit_revert_bad_token_error(Cfg) ->
 
 -spec list_deposit_adjustment_wo_changes_plan(config) -> _.
 list_deposit_adjustment_wo_changes_plan(Cfg) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositAdjustments">>, Cfg),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositAdjustments">>, Cfg),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetDepositAdjustments', _) ->
@@ -347,7 +347,7 @@ list_deposit_adjustment_wo_changes_plan(Cfg) ->
 
 -spec list_deposit_adjustment_with_changes_plan(config) -> _.
 list_deposit_adjustment_with_changes_plan(Cfg) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositAdjustments">>, Cfg),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"ListDepositAdjustments">>, Cfg),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, fun('GetDepositAdjustments', _) ->
@@ -389,7 +389,7 @@ check_bad_token_error(OpName, MockFunc, SwagFunc, C) ->
     check_error(OpName, <<"InvalidToken">>, MockFunc, SwagFunc, C).
 
 check_error(OpName, Error, MockFunc, SwagFunc, C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(OpName, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(OpName, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_stat, MockFunc}

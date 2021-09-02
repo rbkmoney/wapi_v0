@@ -276,7 +276,7 @@ create_fail_wallet_inaccessible(C) ->
 -spec get_ok(config()) -> _.
 get_ok(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(<<"GetWithdrawal">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(<<"GetWithdrawal">>, ?STRING, PartyID, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_withdrawal, fun
@@ -298,7 +298,7 @@ get_ok(C) ->
 
 -spec get_fail_withdrawal_notfound(config()) -> _.
 get_fail_withdrawal_notfound(C) ->
-    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
+    _ = wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_withdrawal, fun
@@ -324,7 +324,7 @@ get_fail_withdrawal_notfound(C) ->
 -spec get_by_external_id_ok(config()) -> _.
 get_by_external_id_ok(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(<<"GetWithdrawalByExternalID">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(<<"GetWithdrawalByExternalID">>, ?STRING, PartyID, C),
     _ = wapi_ct_helper:mock_services(
         [
             {bender_thrift, fun('GetInternalID', _) -> {ok, ?GET_INTERNAL_ID_RESULT} end},
@@ -538,7 +538,7 @@ create_qoute_call_api(C) ->
 
 create_withdrawal_start_mocks(C, CreateWithdrawalResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_generic_op_ctx(
+    _ = wapi_ct_helper_bouncer:mock_assert_generic_op_ctx(
         [
             {destination, ?STRING, PartyID},
             {wallet, ?STRING, PartyID}
@@ -568,7 +568,7 @@ create_withdrawal_start_mocks(C, CreateWithdrawalResultFun) ->
 
 get_events_start_mocks(Op, C, GetEventRangeResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(Op, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_withdrawal_op_ctx(Op, ?STRING, PartyID, C),
     wapi_ct_helper:mock_services(
         [
             {fistful_withdrawal, fun
@@ -583,7 +583,7 @@ get_events_start_mocks(Op, C, GetEventRangeResultFun) ->
 
 get_quote_start_mocks(C, GetQuoteResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_generic_op_ctx(
+    _ = wapi_ct_helper_bouncer:mock_assert_generic_op_ctx(
         [
             {destination, ?STRING, PartyID},
             {wallet, ?STRING, PartyID}

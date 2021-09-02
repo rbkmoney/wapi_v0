@@ -196,7 +196,7 @@ create_destination_fail_party_inaccessible_test(C) ->
 get_destination_ok_test(C) ->
     Destination = make_destination(C, bank_card),
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, C),
     get_destination_start_mocks(C, fun() -> {ok, Destination} end),
     ?assertMatch(
         {ok, _},
@@ -206,7 +206,7 @@ get_destination_ok_test(C) ->
 -spec get_destination_fail_notfound_test(config()) -> _.
 get_destination_fail_notfound_test(C) ->
     get_destination_start_mocks(C, fun() -> throw(#fistful_DestinationNotFound{}) end),
-    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
+    _ = wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     ?assertEqual(
         {error, {404, #{}}},
         get_destination_call_api(C)
@@ -313,7 +313,7 @@ do_destination_lifecycle(ResourceType, C) ->
         C
     ),
     Sup0 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
-    wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, Sup0),
+    _ = wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, Sup0),
     {ok, CreateResult} = call_api(
         fun swag_client_wallet_withdrawals_api:create_destination/3,
         #{
@@ -324,7 +324,7 @@ do_destination_lifecycle(ResourceType, C) ->
     exit(Sup0, kill),
     _ = timer:sleep(1000),
     Sup1 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
-    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, Sup1),
+    _ = wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestination">>, ?STRING, PartyID, Sup1),
     {ok, GetResult} = call_api(
         fun swag_client_wallet_withdrawals_api:get_destination/3,
         #{
@@ -338,7 +338,7 @@ do_destination_lifecycle(ResourceType, C) ->
     exit(Sup1, kill),
     _ = timer:sleep(1000),
     Sup2 = wapi_ct_helper:start_mocked_service_sup(?MODULE),
-    wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestinationByExternalID">>, ?STRING, PartyID, Sup2),
+    _ = wapi_ct_helper_bouncer:mock_assert_destination_op_ctx(<<"GetDestinationByExternalID">>, ?STRING, PartyID, Sup2),
     {ok, GetByIDResult} = call_api(
         fun swag_client_wallet_withdrawals_api:get_destination_by_external_id/3,
         #{
@@ -514,7 +514,7 @@ make_destination(C, ResourceType) ->
 create_destination_start_mocks(C, CreateDestinationResultFun) ->
     PartyID = ?config(party, C),
 
-    wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateDestination">>, ?STRING, PartyID, C),
     wapi_ct_helper:mock_services(
         [
             {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},

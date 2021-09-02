@@ -170,6 +170,7 @@ prepare(
 prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
     Authorize = fun() ->
         %% TODO: Add party as arg to query
+        %% https://rbkmoney.atlassian.net/browse/ED-258
         Prototypes = [{operation, #{party => wapi_handler_utils:get_owner(Context), id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -257,8 +258,8 @@ prepare(
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -284,8 +285,8 @@ prepare(
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -332,8 +333,8 @@ prepare(
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -352,8 +353,8 @@ prepare(OperationID = 'PollIdentityChallengeEvents', Req = #{'identityID' := Ide
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -371,8 +372,8 @@ prepare(OperationID = 'GetIdentityChallengeEvent', Req = #{'identityID' := Ident
     AuthContext = build_auth_context([{identity, IdentityId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -396,8 +397,8 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -468,8 +469,8 @@ prepare(OperationID = 'CreateWallet', Req = #{'Wallet' := Params = #{<<"identity
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -496,8 +497,8 @@ prepare(OperationID = 'GetWalletAccount', Req = #{'walletID' := WalletId}, Conte
     AuthContext = build_auth_context([{wallet, WalletId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -523,8 +524,8 @@ prepare(
     AuthContext = build_auth_context([{wallet, WalletId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -555,8 +556,8 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -647,8 +648,8 @@ prepare(
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -689,8 +690,8 @@ prepare(
     AuthContext = build_auth_context([{destination, DestinationId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -725,8 +726,8 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -790,8 +791,8 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -933,8 +934,8 @@ prepare(OperationID = 'ListWithdrawals', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -961,8 +962,8 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
     AuthContext = build_auth_context([{withdrawal, WithdrawalId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -991,8 +992,8 @@ prepare(
     AuthContext = build_auth_context([{withdrawal, WithdrawalId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1023,8 +1024,8 @@ prepare(OperationID = 'ListDeposits', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1058,8 +1059,8 @@ prepare(OperationID = 'ListDepositReverts', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1093,8 +1094,8 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1127,8 +1128,8 @@ prepare(
     AuthContext = build_auth_context([{wallet, SenderID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1278,8 +1279,8 @@ prepare(
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1304,8 +1305,8 @@ prepare(OperationID = 'GetWebhooks', Req = #{identityID := IdentityID}, Context,
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1333,8 +1334,8 @@ prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhoo
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1364,8 +1365,8 @@ prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, web
     ),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1389,8 +1390,8 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1457,9 +1458,9 @@ prepare(
         end,
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{report => ReportId, id => OperationID}, AuthContext)},
+            {operation, build_prototype_for(operation, #{report => ReportId, id => OperationID}, AuthContext)},
             {wallet,
-                with_auth_context(
+                build_prototype_for(
                     wallet,
                     [wapi_bouncer_context:build_wallet_entity(report, ResultReport, {identity, IdentityID})],
                     AuthContext
@@ -1485,8 +1486,8 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
-            {operation, with_auth_context(operation, #{id => OperationID}, AuthContext)},
-            {wallet, with_auth_context(wallet, [], AuthContext)}
+            {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
+            {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
         {ok, Resolution}
@@ -1649,7 +1650,7 @@ build_auth_context({webhook, WebhookId, IdentityID}, Context) ->
         end,
     {webhook, {WebhookId, ResultWebhook}}.
 
-with_auth_context(operation, OpContext, AuthContext) ->
+build_prototype_for(operation, OpContext, AuthContext) ->
     lists:foldl(
         fun
             ({identity, {IdentityID, _Identity, _Owner}}, Acc) ->
@@ -1666,7 +1667,7 @@ with_auth_context(operation, OpContext, AuthContext) ->
         OpContext,
         AuthContext
     );
-with_auth_context(wallet, Entities, AuthContext) ->
+build_prototype_for(wallet, Entities, AuthContext) ->
     lists:foldl(
         fun
             ({identity, {_IdentityID, Identity, Owner}}, Acc) ->

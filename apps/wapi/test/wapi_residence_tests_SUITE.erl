@@ -99,7 +99,7 @@ end_per_testcase(_Name, C) ->
 
 -spec get_residence_ok(config()) -> _.
 get_residence_ok(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"GetResidence">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"GetResidence">>, C),
     {ok, _} = call_api(
         fun swag_client_wallet_residences_api:get_residence/3,
         #{
@@ -112,7 +112,7 @@ get_residence_ok(C) ->
 
 -spec get_residence_fail_notfound(config()) -> _.
 get_residence_fail_notfound(C) ->
-    wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"GetResidence">>, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_op_ctx(<<"GetResidence">>, C),
     {error, {404, #{}}} = call_api(
         fun swag_client_wallet_residences_api:get_residence/3,
         #{

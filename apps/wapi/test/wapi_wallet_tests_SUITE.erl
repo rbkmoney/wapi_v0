@@ -165,7 +165,7 @@ get_fail_wallet_notfound(C) ->
         ],
         C
     ),
-    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
+    _ = wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     ?assertEqual(
         {error, {404, #{}}},
         get_wallet_call_api(C)
@@ -197,7 +197,7 @@ get_by_external_id_ok(C) ->
 -spec get_account_ok(config()) -> _.
 get_account_ok(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWalletAccount">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWalletAccount">>, ?STRING, PartyID, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun
@@ -212,7 +212,7 @@ get_account_ok(C) ->
 
 -spec get_account_fail_get_context_wallet_notfound(config()) -> _.
 get_account_fail_get_context_wallet_notfound(C) ->
-    wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
+    _ = wapi_ct_helper_bouncer:mock_arbiter(wapi_ct_helper_bouncer:judge_always_forbidden(), C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun
@@ -231,7 +231,7 @@ get_account_fail_get_context_wallet_notfound(C) ->
 -spec get_account_fail_get_accountbalance_wallet_notfound(config()) -> _.
 get_account_fail_get_accountbalance_wallet_notfound(C) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWalletAccount">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWalletAccount">>, ?STRING, PartyID, C),
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun
@@ -295,7 +295,7 @@ get_account_call_api(C) ->
 
 create_wallet_start_mocks(C, CreateResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateWallet">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_identity_op_ctx(<<"CreateWallet">>, ?STRING, PartyID, C),
     wapi_ct_helper:mock_services(
         [
             {bender_thrift, fun('GenerateID', _) -> {ok, ?GENERATE_ID_RESULT} end},
@@ -310,7 +310,7 @@ create_wallet_start_mocks(C, CreateResultFun) ->
 
 get_wallet_start_mocks(C, GetResultFun) ->
     PartyID = ?config(party, C),
-    wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWallet">>, ?STRING, PartyID, C),
+    _ = wapi_ct_helper_bouncer:mock_assert_wallet_op_ctx(<<"GetWallet">>, ?STRING, PartyID, C),
     wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun

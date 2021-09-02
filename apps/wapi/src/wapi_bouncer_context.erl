@@ -18,17 +18,17 @@
 
 -type prototype_operation() :: #{
     id => swag_server_wallet:operation_id(),
-    party => maybe_entity_id(),
-    identity => maybe_entity_id(),
-    wallet => maybe_entity_id(),
-    withdrawal => maybe_entity_id(),
-    deposit => maybe_entity_id(),
-    w2w_transfer => maybe_entity_id(),
-    source => maybe_entity_id(),
-    destination => maybe_entity_id(),
-    report => maybe_entity_id(),
-    file => maybe_entity_id(),
-    webhook => maybe_entity_id()
+    party => maybe_undefined(entity_id()),
+    identity => maybe_undefined(entity_id()),
+    wallet => maybe_undefined(entity_id()),
+    withdrawal => maybe_undefined(entity_id()),
+    deposit => maybe_undefined(entity_id()),
+    w2w_transfer => maybe_undefined(entity_id()),
+    source => maybe_undefined(entity_id()),
+    destination => maybe_undefined(entity_id()),
+    report => maybe_undefined(entity_id()),
+    file => maybe_undefined(entity_id()),
+    webhook => maybe_undefined(entity_id())
 }.
 
 -type prototype_wallet() :: [wallet_entity()].
@@ -105,7 +105,7 @@
 }.
 
 -type entity_id() :: binary().
--type maybe_entity_id() :: entity_id() | undefined.
+-type maybe_undefined(Type) :: Type | undefined.
 -type cash() :: #{amount := binary(), currency := binary()}.
 
 -export_type([prototypes/0]).

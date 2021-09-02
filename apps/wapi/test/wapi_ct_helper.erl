@@ -203,19 +203,6 @@ stop_mocked_service_sup(SupPid) ->
 mock_services(Services, SupOrConfig) ->
     maps:map(fun start_woody_client/2, mock_services_(Services, SupOrConfig)).
 
--define(TK_META_NS_KEYCLOAK, <<"com.rbkmoney.keycloak">>).
--define(TK_META_NS_APIKEYMGMT, <<"com.rbkmoney.apikeymgmt">>).
-
-start_woody_client(token_keeper, Urls) ->
-    start_app(token_keeper_client, [
-        {service_client, #{
-            url => Urls
-        }},
-        {namespace_mappings, #{
-            user_session => ?TK_META_NS_KEYCLOAK,
-            api_key => ?TK_META_NS_APIKEYMGMT
-        }}
-    ]);
 start_woody_client(bender_thrift, Urls) ->
     ok = application:set_env(
         bender_client,
