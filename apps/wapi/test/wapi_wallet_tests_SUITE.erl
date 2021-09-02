@@ -159,6 +159,7 @@ get_fail_wallet_notfound(C) ->
     wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun
+                % Чтобы тест не упал на авторизации нужно, чтобы были оба мока
                 ('GetContext', _) -> {throwing, #fistful_WalletNotFound{}};
                 ('Get', _) -> {throwing, #fistful_WalletNotFound{}}
             end}
@@ -216,6 +217,7 @@ get_account_fail_get_context_wallet_notfound(C) ->
     _ = wapi_ct_helper:mock_services(
         [
             {fistful_wallet, fun
+                % Чтобы тест не упал на авторизации нужно, чтобы были оба мока
                 ('GetContext', _) -> {throwing, #fistful_WalletNotFound{}};
                 ('Get', _) -> {throwing, #fistful_WalletNotFound{}};
                 ('GetAccountBalance', _) -> {ok, ?ACCOUNT_BALANCE}

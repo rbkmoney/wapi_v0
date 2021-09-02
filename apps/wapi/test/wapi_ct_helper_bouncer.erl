@@ -99,50 +99,50 @@ mock_assert_generic_op_ctx(Entities, WapiContext, Config) ->
 %%
 
 make_entity({identity, ID, OwnerID}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"Identity">>,
         party = OwnerID
     };
 make_entity({wallet, ID, OwnerID}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"Wallet">>,
         party = OwnerID,
-        wallet = #bctx_v1_WalletAttrs{}
+        wallet = #bouncer_base_WalletAttrs{}
     };
 make_entity({withdrawal, ID, OwnerID}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"Withdrawal">>,
         party = OwnerID
     };
 make_entity({w2w_transfer, ID, OwnerID}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"W2WTransfer">>,
         party = OwnerID
     };
 make_entity({destination, ID, OwnerID}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"Destination">>,
         party = OwnerID
     };
 make_entity({report, ID, Data = #{identity := IdentityID}}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"WalletReport">>,
-        wallet = #bctx_v1_WalletAttrs{
+        wallet = #bouncer_base_WalletAttrs{
             identity = IdentityID,
             report = wapi_handler_utils:maybe_with(files, Data, fun build_report_attrs/1)
         }
     };
 make_entity({webhook, ID, Data = #{identity := IdentityID}}) ->
-    #bctx_v1_Entity{
+    #bouncer_base_Entity{
         id = ID,
         type = <<"WalletWebhook">>,
-        wallet = #bctx_v1_WalletAttrs{
+        wallet = #bouncer_base_WalletAttrs{
             identity = IdentityID,
             wallet = maps:get(wallet, Data, undefined)
         }
@@ -152,7 +152,7 @@ build_set(L) when is_list(L) ->
     ordsets:from_list(L).
 
 build_report_attrs(Attrs) when is_list(Attrs) ->
-    #bctx_v1_WalletReportAttrs{
+    #bouncer_base_WalletReportAttrs{
         files = build_set(Attrs)
     }.
 
