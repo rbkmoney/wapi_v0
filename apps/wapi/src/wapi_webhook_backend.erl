@@ -16,9 +16,7 @@
 -spec create_webhook(req_data(), handler_context()) -> {ok, response_data()} | {error, CreateError} when
     CreateError ::
         {identity, notfound}
-        | {identity, unauthorized}
-        | {wallet, notfound}
-        | {wallet, unauthorized}.
+        | {wallet, notfound}.
 create_webhook(#{'Webhook' := Params}, HandlerContext) ->
     WebhookParams = marshal_webhook_params(Params),
     IdentityID = WebhookParams#webhooker_WebhookParams.identity_id,
@@ -39,8 +37,7 @@ create_webhook(#{'Webhook' := Params}, HandlerContext) ->
 
 -spec get_webhooks(id(), ctx()) -> {ok, response_data()} | {error, GetError} when
     GetError ::
-        {identity, notfound}
-        | {identity, unauthorized}.
+        {identity, notfound}.
 get_webhooks(IdentityID, HandlerContext) ->
     case wapi_access_backend:check_resource_by_id(identity, IdentityID, HandlerContext) of
         ok ->
@@ -55,8 +52,7 @@ get_webhooks(IdentityID, HandlerContext) ->
     GetError ::
         notfound
         | {webhook, notfound}
-        | {identity, notfound}
-        | {identity, unauthorized}.
+        | {identity, notfound}.
 get_webhook(WebhookID, IdentityID, HandlerContext) ->
     case wapi_access_backend:check_resource_by_id(identity, IdentityID, HandlerContext) of
         ok ->
@@ -75,8 +71,7 @@ get_webhook(WebhookID, IdentityID, HandlerContext) ->
 -spec delete_webhook(id(), id(), ctx()) -> ok | {error, DeleteError} when
     DeleteError ::
         notfound
-        | {identity, notfound}
-        | {identity, unauthorized}.
+        | {identity, notfound}.
 delete_webhook(WebhookID, IdentityID, HandlerContext) ->
     case wapi_access_backend:check_resource_by_id(identity, IdentityID, HandlerContext) of
         ok ->

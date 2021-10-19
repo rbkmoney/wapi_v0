@@ -107,19 +107,13 @@ create(Params, Context, HandlerContext) ->
 
 -spec get(id(), handler_context()) ->
     {ok, response_data(), id()}
-    | {error, {withdrawal, notfound}}
-    | {error, {withdrawal, unauthorized}}.
+    | {error, {withdrawal, notfound}}.
 get(WithdrawalID, HandlerContext) ->
     Request = {fistful_withdrawal, 'Get', {WithdrawalID, #'EventRange'{}}},
     case service_call(Request, HandlerContext) of
         {ok, WithdrawalThrift} ->
-            case wapi_access_backend:check_resource(withdrawal, WithdrawalThrift, HandlerContext) of
-                ok ->
-                    {ok, Owner} = wapi_access_backend:get_resource_owner(withdrawal, WithdrawalThrift),
-                    {ok, unmarshal(withdrawal, WithdrawalThrift), Owner};
-                {error, unauthorized} ->
-                    {error, {withdrawal, unauthorized}}
-            end;
+            {ok, Owner} = wapi_access_backend:get_resource_owner(withdrawal, WithdrawalThrift),
+            {ok, unmarshal(withdrawal, WithdrawalThrift), Owner};
         {exception, #fistful_WithdrawalNotFound{}} ->
             {error, {withdrawal, notfound}}
     end.
@@ -127,7 +121,6 @@ get(WithdrawalID, HandlerContext) ->
 -spec get_by_external_id(external_id(), handler_context()) ->
     {ok, response_data(), id()}
     | {error, {withdrawal, notfound}}
-    | {error, {withdrawal, unauthorized}}
     | {error, {external_id, {unknown_external_id, external_id()}}}.
 get_by_external_id(ExternalID, HandlerContext = #{woody_context := WoodyContext}) ->
     PartyID = wapi_handler_utils:get_owner(HandlerContext),
@@ -195,15 +188,12 @@ create_quote_(Params, HandlerContext) ->
 
 -spec get_events(req_data(), handler_context()) ->
     {ok, response_data()}
-    | {error, {withdrawal, notfound}}
-    | {error, {withdrawal, unauthorized}}.
+    | {error, {withdrawal, notfound}}.
 get_events(Params = #{'withdrawalID' := WithdrawalId, 'limit' := Limit}, HandlerContext) ->
     Cursor = maps:get('eventCursor', Params, undefined),
     case get_events(WithdrawalId, {Cursor, Limit}, HandlerContext) of
         {ok, Events} ->
             {ok, Events};
-        {error, {withdrawal, unauthorized}} = Error ->
-            Error;
         {error, {withdrawal, notfound}} = Error ->
             Error;
         {exception, #fistful_WithdrawalNotFound{}} ->
@@ -213,7 +203,6 @@ get_events(Params = #{'withdrawalID' := WithdrawalId, 'limit' := Limit}, Handler
 -spec get_event(id(), integer(), handler_context()) ->
     {ok, response_data()}
     | {error, {withdrawal, notfound}}
-    | {error, {withdrawal, unauthorized}}
     | {error, {event, notfound}}.
 get_event(WithdrawalId, EventId, HandlerContext) ->
     case get_events(WithdrawalId, {EventId - 1, 1}, HandlerContext) of
@@ -221,8 +210,6 @@ get_event(WithdrawalId, EventId, HandlerContext) ->
             {ok, Event};
         {ok, []} ->
             {error, {event, notfound}};
-        {error, {withdrawal, unauthorized}} = Error ->
-            Error;
         {error, {withdrawal, notfound}} = Error ->
             Error;
         {exception, #fistful_WithdrawalNotFound{}} ->
@@ -350,8 +337,6 @@ authorize_resource_by_bearer(Resource, ResourceID, HandlerContext) ->
     case wapi_access_backend:check_resource_by_id(Resource, ResourceID, HandlerContext) of
         ok ->
             ok;
-        {error, unauthorized} ->
-            {error, {Resource, unauthorized}};
         {error, notfound} ->
             {error, {Resource, notfound}}
     end.

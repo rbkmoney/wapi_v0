@@ -19,7 +19,6 @@
 -spec create(req_data(), handler_context()) -> {ok, response_data()} | {error, DestinationError} when
     DestinationError ::
         {invalid_resource_token, binary()}
-        | {identity, unauthorized}
         | {identity, notfound}
         | {currency, notfound}
         | inaccessible
@@ -83,19 +82,13 @@ create_request(ID, Params, ResourceThrift, HandlerContext) ->
 
 -spec get(id(), handler_context()) ->
     {ok, response_data(), id()}
-    | {error, {destination, notfound}}
-    | {error, {destination, unauthorized}}.
+    | {error, {destination, notfound}}.
 get(DestinationID, HandlerContext) ->
     Request = {fistful_destination, 'Get', {DestinationID, #'EventRange'{}}},
     case service_call(Request, HandlerContext) of
         {ok, DestinationThrift} ->
-            case wapi_access_backend:check_resource(destination, DestinationThrift, HandlerContext) of
-                ok ->
-                    {ok, Owner} = wapi_access_backend:get_resource_owner(destination, DestinationThrift),
-                    {ok, unmarshal(destination, DestinationThrift), Owner};
-                {error, unauthorized} ->
-                    {error, {destination, unauthorized}}
-            end;
+            {ok, Owner} = wapi_access_backend:get_resource_owner(destination, DestinationThrift),
+            {ok, unmarshal(destination, DestinationThrift), Owner};
         {exception, #fistful_DestinationNotFound{}} ->
             {error, {destination, notfound}}
     end.
@@ -103,7 +96,6 @@ get(DestinationID, HandlerContext) ->
 -spec get_by_external_id(external_id(), handler_context()) ->
     {ok, response_data(), id()}
     | {error, {destination, notfound}}
-    | {error, {destination, unauthorized}}
     | {error, {external_id, {unknown_external_id, external_id()}}}.
 get_by_external_id(ExternalID, HandlerContext = #{woody_context := WoodyContext}) ->
     PartyID = wapi_handler_utils:get_owner(HandlerContext),

@@ -7,7 +7,6 @@
 -include_lib("fistful_proto/include/ff_proto_withdrawal_thrift.hrl").
 
 -export([get_resource_owner/2]).
--export([check_resource/3]).
 -export([check_resource_by_id/3]).
 
 -type id() :: binary().
@@ -31,19 +30,13 @@
 get_resource_owner(Resource, Data) ->
     {ok, get_owner(get_context_from_state(Resource, Data))}.
 
--spec check_resource(resource_type(), data(), handler_context()) -> ok | {error, unauthorized}.
-check_resource(Resource, Data, HandlerContext) ->
-    Owner = get_owner(get_context_from_state(Resource, Data)),
-    check_resource_access(is_resource_owner(Owner, HandlerContext)).
-
--spec check_resource_by_id(resource_type(), id(), handler_context()) -> ok | {error, notfound | unauthorized}.
+-spec check_resource_by_id(resource_type(), id(), handler_context()) -> ok | {error, notfound}.
 check_resource_by_id(Resource, ID, HandlerContext) ->
     case get_context_by_id(Resource, ID, HandlerContext) of
         {error, notfound} = Error ->
             Error;
-        Context ->
-            Owner = get_owner(Context),
-            check_resource_access(is_resource_owner(Owner, HandlerContext))
+        _ ->
+            ok
     end.
 
 %%
@@ -105,9 +98,3 @@ get_context_from_state(withdrawal, #wthd_WithdrawalState{context = Context}) ->
 get_owner(ContextThrift) ->
     Context = wapi_codec:unmarshal(context, ContextThrift),
     wapi_backend_utils:get_from_ctx(<<"owner">>, Context).
-
-is_resource_owner(Owner, HandlerCtx) ->
-    Owner =:= wapi_handler_utils:get_owner(HandlerCtx).
-
-check_resource_access(true) -> ok;
-check_resource_access(false) -> {error, unauthorized}.
