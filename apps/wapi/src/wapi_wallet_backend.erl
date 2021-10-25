@@ -21,18 +21,13 @@
         | {currency, notfound}
         | inaccessible
         | {external_id_conflict, id()}.
-create(Params = #{<<"identity">> := IdentityID}, HandlerContext) ->
-    case wapi_access_backend:check_resource_by_id(identity, IdentityID, HandlerContext) of
-        ok ->
-            case wapi_backend_utils:gen_id(wallet, Params, HandlerContext) of
-                {ok, ID} ->
-                    Context = wapi_backend_utils:make_ctx(Params, HandlerContext),
-                    create(ID, Params, Context, HandlerContext);
-                {error, {external_id_conflict, _}} = Error ->
-                    Error
-            end;
-        {error, notfound} ->
-            {error, {identity, notfound}}
+create(Params, HandlerContext) ->
+    case wapi_backend_utils:gen_id(wallet, Params, HandlerContext) of
+        {ok, ID} ->
+            Context = wapi_backend_utils:make_ctx(Params, HandlerContext),
+            create(ID, Params, Context, HandlerContext);
+        {error, {external_id_conflict, _}} = Error ->
+            Error
     end.
 
 create(WalletID, Params, Context, HandlerContext) ->
@@ -72,7 +67,7 @@ get(WalletID, HandlerContext) ->
     Request = {fistful_wallet, 'Get', {WalletID, #'EventRange'{}}},
     case service_call(Request, HandlerContext) of
         {ok, WalletThrift} ->
-            {ok, Owner} = wapi_access_backend:get_resource_owner(wallet, WalletThrift),
+            {ok, Owner} = wapi_backend_utils:get_entity_owner(wallet, WalletThrift),
             {ok, unmarshal(wallet, WalletThrift), Owner};
         {exception, #fistful_WalletNotFound{}} ->
             {error, {wallet, notfound}}
@@ -82,16 +77,11 @@ get(WalletID, HandlerContext) ->
     {ok, response_data()}
     | {error, {wallet, notfound}}.
 get_account(WalletID, HandlerContext) ->
-    case wapi_access_backend:check_resource_by_id(wallet, WalletID, HandlerContext) of
-        ok ->
-            Request = {fistful_wallet, 'GetAccountBalance', {WalletID}},
-            case service_call(Request, HandlerContext) of
-                {ok, AccountBalanceThrift} ->
-                    {ok, unmarshal(wallet_account_balance, AccountBalanceThrift)};
-                {exception, #fistful_WalletNotFound{}} ->
-                    {error, {wallet, notfound}}
-            end;
-        {error, notfound} ->
+    Request = {fistful_wallet, 'GetAccountBalance', {WalletID}},
+    case service_call(Request, HandlerContext) of
+        {ok, AccountBalanceThrift} ->
+            {ok, unmarshal(wallet_account_balance, AccountBalanceThrift)};
+        {exception, #fistful_WalletNotFound{}} ->
             {error, {wallet, notfound}}
     end.
 

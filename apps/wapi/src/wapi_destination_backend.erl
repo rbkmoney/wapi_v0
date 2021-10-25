@@ -14,7 +14,7 @@
 
 %% Pipeline
 
--import(wapi_pipeline, [do/1, unwrap/1, unwrap/2]).
+-import(wapi_pipeline, [do/1, unwrap/1]).
 
 -spec create(req_data(), handler_context()) -> {ok, response_data()} | {error, DestinationError} when
     DestinationError ::
@@ -23,9 +23,8 @@
         | {currency, notfound}
         | inaccessible
         | {external_id_conflict, {id(), external_id()}}.
-create(Params = #{<<"identity">> := IdentityID}, HandlerContext) ->
+create(Params, HandlerContext) ->
     do(fun() ->
-        unwrap(identity, wapi_access_backend:check_resource_by_id(identity, IdentityID, HandlerContext)),
         ResourceThrift = unwrap(construct_resource(maps:get(<<"resource">>, Params))),
         ID = unwrap(generate_id(Params, ResourceThrift, HandlerContext)),
         unwrap(create_request(ID, Params, ResourceThrift, HandlerContext))
@@ -87,7 +86,7 @@ get(DestinationID, HandlerContext) ->
     Request = {fistful_destination, 'Get', {DestinationID, #'EventRange'{}}},
     case service_call(Request, HandlerContext) of
         {ok, DestinationThrift} ->
-            {ok, Owner} = wapi_access_backend:get_resource_owner(destination, DestinationThrift),
+            {ok, Owner} = wapi_backend_utils:get_entity_owner(destination, DestinationThrift),
             {ok, unmarshal(destination, DestinationThrift), Owner};
         {exception, #fistful_DestinationNotFound{}} ->
             {error, {destination, notfound}}

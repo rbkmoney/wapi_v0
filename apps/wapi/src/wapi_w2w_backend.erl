@@ -53,7 +53,7 @@ get_transfer(ID, HandlerContext) ->
     Request = {fistful_w2w_transfer, 'Get', {ID, EventRange}},
     case service_call(Request, HandlerContext) of
         {ok, TransferThrift} ->
-            {ok, Owner} = wapi_access_backend:get_resource_owner(w2w_transfer, TransferThrift),
+            {ok, Owner} = wapi_backend_utils:get_entity_owner(w2w_transfer, TransferThrift),
             {ok, unmarshal(transfer, TransferThrift), Owner};
         {exception, #fistful_W2WNotFound{}} ->
             {error, {w2w_transfer, {unknown_w2w_transfer, ID}}}

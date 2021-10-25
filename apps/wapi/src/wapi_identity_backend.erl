@@ -32,7 +32,7 @@
 get_identity(IdentityID, HandlerContext) ->
     case get_thrift_identity(IdentityID, HandlerContext) of
         {ok, IdentityThrift} ->
-            {ok, Owner} = wapi_access_backend:get_resource_owner(identity, IdentityThrift),
+            {ok, Owner} = wapi_backend_utils:get_entity_owner(identity, IdentityThrift),
             {ok, unmarshal(identity, IdentityThrift), Owner};
         {error, _} = Error ->
             Error

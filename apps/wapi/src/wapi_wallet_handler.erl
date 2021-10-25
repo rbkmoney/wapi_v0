@@ -751,7 +751,7 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        %% NOTE: This actually can happen with grants, fix later
+        %% NOTE: This means grants are non-functional, fix ASAP
         respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_withdrawal_backend:create_quote(Req, Context) of
             {ok, Quote} ->
@@ -762,8 +762,6 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
                 wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Destination unauthorized">>));
             {error, {wallet, notfound}} ->
                 wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such wallet">>));
-            {error, {wallet, unauthorized}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Wallet unauthorized">>));
             {error, {forbidden_currency, _}} ->
                 wapi_handler_utils:reply_ok(
                     422,
@@ -818,7 +816,7 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        %% NOTE: This actually can happen with grants, fix later
+        %% NOTE: This means grants are non-functional, fix ASAP
         respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_withdrawal_backend:create(Params, Context) of
             {ok, Withdrawal = #{<<"id">> := WithdrawalId}} ->
@@ -832,8 +830,6 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
                 wapi_handler_utils:logic_error(external_id_conflict, {ID, ExternalID});
             {error, {wallet, notfound}} ->
                 wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such wallet">>));
-            {error, {wallet, unauthorized}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Wallet unauthorized">>));
             {error, {wallet, {inaccessible, _}}} ->
                 wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"Wallet inaccessible">>));
             {error, {quote_invalid_party, _}} ->
@@ -1272,11 +1268,7 @@ prepare(
         respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_webhook_backend:create_webhook(Req, Context) of
             {ok, Webhook} ->
-                wapi_handler_utils:reply_ok(201, Webhook);
-            {error, {identity, notfound}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>));
-            {error, {wallet, notfound}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such wallet">>))
+                wapi_handler_utils:reply_ok(201, Webhook)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1303,9 +1295,7 @@ prepare(OperationID = 'GetWebhooks', Req = #{identityID := IdentityID}, Context,
         ),
         case wapi_webhook_backend:get_webhooks(IdentityID, Context) of
             {ok, Webhooks} ->
-                wapi_handler_utils:reply_ok(200, Webhooks);
-            {error, {identity, notfound}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>))
+                wapi_handler_utils:reply_ok(200, Webhooks)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1313,7 +1303,7 @@ prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhoo
     AuthContext = build_auth_context(
         [
             {identity, IdentityID},
-            {webhook, WebhookID, IdentityID}
+            {webhook, WebhookID}
         ],
         [],
         Context
@@ -1337,13 +1327,11 @@ prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhoo
                 wapi_handler_utils:get_error_msg(<<"No such identity">>)
             )
         ),
-        case wapi_webhook_backend:get_webhook(WebhookID, IdentityID, Context) of
+        case wapi_webhook_backend:get_webhook(WebhookID, Context) of
             {ok, Webhook} ->
                 wapi_handler_utils:reply_ok(200, Webhook);
             {error, notfound} ->
-                wapi_handler_utils:reply_ok(404);
-            {error, {identity, notfound}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>))
+                wapi_handler_utils:reply_ok(404)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1351,7 +1339,7 @@ prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, web
     AuthContext = build_auth_context(
         [
             {identity, IdentityID},
-            {webhook, WebhookID, IdentityID}
+            {webhook, WebhookID}
         ],
         [],
         Context
@@ -1375,13 +1363,11 @@ prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, web
                 wapi_handler_utils:get_error_msg(<<"No such identity">>)
             )
         ),
-        case wapi_webhook_backend:delete_webhook(WebhookID, IdentityID, Context) of
+        case wapi_webhook_backend:delete_webhook(WebhookID, Context) of
             ok ->
                 wapi_handler_utils:reply_ok(204);
             {error, notfound} ->
-                wapi_handler_utils:reply_ok(404);
-            {error, {identity, notfound}} ->
-                wapi_handler_utils:reply_ok(422, wapi_handler_utils:get_error_msg(<<"No such identity">>))
+                wapi_handler_utils:reply_ok(404)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1651,13 +1637,11 @@ build_auth_context({withdrawal, WithdrawalId}, Context) ->
             {error, {withdrawal, notfound}} -> {undefined, undefined}
         end,
     {withdrawal, {WithdrawalId, ResultWithdrawal, ResultWithdrawalOwner}};
-build_auth_context({webhook, WebhookId, IdentityID}, Context) ->
+build_auth_context({webhook, WebhookId}, Context) ->
     ResultWebhook =
-        case wapi_webhook_backend:get_webhook(WebhookId, IdentityID, Context) of
+        case wapi_webhook_backend:get_webhook(WebhookId, Context) of
             {ok, Webhook} -> Webhook;
-            {error, notfound} -> undefined;
-            {error, {webhook, notfound}} -> undefined;
-            {error, {identity, notfound}} -> undefined
+            {error, notfound} -> undefined
         end,
     {webhook, {WebhookId, ResultWebhook}}.
 
