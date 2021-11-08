@@ -87,10 +87,10 @@ handle_request(OperationID, Req, SwagContext, Opts) ->
 
 %% Providers
 -spec prepare(operation_id(), req_data(), handler_context(), handler_opts()) -> {ok, request_state()} | no_return().
-prepare(OperationID = 'ListProviders', Req = #{'residence' := Residence}, Context, _Opts) ->
+prepare(OperationID = 'ListProviders', _Req = #{'residence' := Residence}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -98,10 +98,10 @@ prepare(OperationID = 'ListProviders', Req = #{'residence' := Residence}, Contex
         wapi_handler_utils:reply_ok(200, Providers)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetProvider', Req = #{'providerID' := Id}, Context, _Opts) ->
+prepare(OperationID = 'GetProvider', _Req = #{'providerID' := Id}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -111,10 +111,10 @@ prepare(OperationID = 'GetProvider', Req = #{'providerID' := Id}, Context, _Opts
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'ListProviderIdentityClasses', Req = #{'providerID' := Id}, Context, _Opts) ->
+prepare(OperationID = 'ListProviderIdentityClasses', _Req = #{'providerID' := Id}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -126,7 +126,7 @@ prepare(OperationID = 'ListProviderIdentityClasses', Req = #{'providerID' := Id}
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetProviderIdentityClass',
-    Req = #{
+    _Req = #{
         'providerID' := ProviderId,
         'identityClassID' := ClassId
     },
@@ -135,7 +135,7 @@ prepare(
 ) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -172,7 +172,7 @@ prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
         %% TODO: Add party as arg to query
         %% https://rbkmoney.atlassian.net/browse/ED-258
         Prototypes = [{operation, #{party => wapi_handler_utils:get_owner(Context), id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -192,7 +192,7 @@ prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Context, _Opts) ->
+prepare(OperationID = 'GetIdentity', _Req = #{'identityID' := IdentityId}, Context, _Opts) ->
     {ResultIdentity, ResultOwner} =
         case wapi_identity_backend:get_identity(IdentityId, Context) of
             {ok, Identity, Owner} -> {Identity, Owner};
@@ -203,7 +203,7 @@ prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Contex
             {operation, #{identity => IdentityId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(identity, ResultIdentity, {party, ResultOwner})]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -212,7 +212,7 @@ prepare(OperationID = 'GetIdentity', Req = #{'identityID' := IdentityId}, Contex
         wapi_handler_utils:reply_ok(200, ResultIdentity)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, Opts) ->
+prepare(OperationID = 'CreateIdentity', _Req = #{'Identity' := Params}, Context, Opts) ->
     Authorize = fun() ->
         PartyID =
             case maps:get(<<"partyID">>, Params, undefined) of
@@ -227,7 +227,7 @@ prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, 
                 #{party => PartyID, id => OperationID}
             }
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -251,7 +251,7 @@ prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, 
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'ListIdentityChallenges',
-    Req = #{'identityID' := IdentityId, 'status' := Status},
+    _Req = #{'identityID' := IdentityId, 'status' := Status},
     Context,
     _Opts
 ) ->
@@ -261,7 +261,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -275,7 +275,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'StartIdentityChallenge',
-    Req = #{
+    _Req = #{
         'identityID' := IdentityId,
         'IdentityChallenge' := Params
     },
@@ -288,7 +288,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -322,7 +322,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetIdentityChallenge',
-    Req = #{
+    _Req = #{
         'identityID' := IdentityId,
         'challengeID' := ChallengeId
     },
@@ -335,7 +335,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -355,7 +355,7 @@ prepare(OperationID = 'PollIdentityChallengeEvents', Req = #{'identityID' := Ide
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -374,7 +374,7 @@ prepare(OperationID = 'GetIdentityChallengeEvent', Req = #{'identityID' := Ident
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -399,7 +399,7 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -421,7 +421,7 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Opts) ->
+prepare(OperationID = 'GetWallet', _Req = #{'walletID' := WalletId}, Context, _Opts) ->
     {ResultWallet, ResultWalletOwner} =
         case wapi_wallet_backend:get(WalletId, Context) of
             {ok, Wallet, Owner} -> {Wallet, Owner};
@@ -432,7 +432,7 @@ prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Op
             {operation, #{wallet => WalletId, id => OperationID}},
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, {party, ResultWalletOwner})]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -441,7 +441,7 @@ prepare(OperationID = 'GetWallet', Req = #{'walletID' := WalletId}, Context, _Op
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWalletByExternalID', Req = #{externalID := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetWalletByExternalID', _Req = #{externalID := ExternalID}, Context, _Opts) ->
     {ResultWallet, ResultWalletOwner, WalletId} =
         case wapi_wallet_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -456,7 +456,7 @@ prepare(OperationID = 'GetWalletByExternalID', Req = #{externalID := ExternalID}
             },
             {wallet, [wapi_bouncer_context:build_wallet_entity(wallet, ResultWallet, {party, ResultWalletOwner})]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -465,14 +465,14 @@ prepare(OperationID = 'GetWalletByExternalID', Req = #{externalID := ExternalID}
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateWallet', Req = #{'Wallet' := Params = #{<<"identity">> := IdentityID}}, Context, Opts) ->
+prepare(OperationID = 'CreateWallet', _Req = #{'Wallet' := Params = #{<<"identity">> := IdentityID}}, Context, Opts) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -500,14 +500,14 @@ prepare(OperationID = 'CreateWallet', Req = #{'Wallet' := Params = #{<<"identity
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWalletAccount', Req = #{'walletID' := WalletId}, Context, _Opts) ->
+prepare(OperationID = 'GetWalletAccount', _Req = #{'walletID' := WalletId}, Context, _Opts) ->
     AuthContext = build_auth_context([{wallet, WalletId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -521,7 +521,7 @@ prepare(OperationID = 'GetWalletAccount', Req = #{'walletID' := WalletId}, Conte
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'IssueWalletGrant',
-    Req = #{
+    _Req = #{
         'walletID' := WalletId,
         'WalletGrantRequest' := #{<<"validUntil">> := Expiration, <<"asset">> := Asset}
     },
@@ -534,7 +534,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -567,7 +567,7 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -589,7 +589,7 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId}, Context, _Opts) ->
+prepare(OperationID = 'GetDestination', _Req = #{'destinationID' := DestinationId}, Context, _Opts) ->
     {ResultDestination, ResultDestinationOwner} =
         case wapi_destination_backend:get(DestinationId, Context) of
             {ok, Destination, Owner} -> {Destination, Owner};
@@ -609,7 +609,7 @@ prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId
                 )
             ]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -618,7 +618,7 @@ prepare(OperationID = 'GetDestination', Req = #{'destinationID' := DestinationId
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetDestinationByExternalID', _Req = #{'externalID' := ExternalID}, Context, _Opts) ->
     {ResultDestination, ResultDestinationOwner, DestinationId} =
         case wapi_destination_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -639,7 +639,7 @@ prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := Exte
                 )
             ]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -650,7 +650,7 @@ prepare(OperationID = 'GetDestinationByExternalID', Req = #{'externalID' := Exte
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'CreateDestination',
-    Req = #{'Destination' := Params = #{<<"identity">> := IdentityID}},
+    _Req = #{'Destination' := Params = #{<<"identity">> := IdentityID}},
     Context,
     Opts
 ) ->
@@ -660,7 +660,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -696,7 +696,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'IssueDestinationGrant',
-    Req = #{
+    _Req = #{
         'destinationID' := DestinationId,
         'DestinationGrantRequest' := #{<<"validUntil">> := Expiration}
     },
@@ -709,7 +709,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -746,7 +746,7 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -797,7 +797,7 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Params}, Context, Opts) ->
+prepare(OperationID = 'CreateWithdrawal', _Req = #{'WithdrawalParameters' := Params}, Context, Opts) ->
     AuthContext = build_auth_context(
         [
             {wallet, maps:get(<<"wallet">>, Params)},
@@ -811,7 +811,7 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -887,7 +887,7 @@ prepare(OperationID = 'CreateWithdrawal', Req = #{'WithdrawalParameters' := Para
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
+prepare(OperationID = 'GetWithdrawal', _Req = #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
     {ResultWithdrawal, ResultWithdrawalOwner} =
         case wapi_withdrawal_backend:get(WithdrawalId, Context) of
             {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
@@ -903,7 +903,7 @@ prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, 
                 wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})
             ]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -912,7 +912,7 @@ prepare(OperationID = 'GetWithdrawal', Req = #{'withdrawalID' := WithdrawalId}, 
         wapi_handler_utils:reply_ok(200, ResultWithdrawal)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWithdrawalByExternalID', Req = #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetWithdrawalByExternalID', _Req = #{'externalID' := ExternalID}, Context, _Opts) ->
     {ResultWithdrawal, ResultWithdrawalOwner, WithdrawalId} =
         case wapi_withdrawal_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -929,7 +929,7 @@ prepare(OperationID = 'GetWithdrawalByExternalID', Req = #{'externalID' := Exter
                 wapi_bouncer_context:build_wallet_entity(withdrawal, ResultWithdrawal, {party, ResultWithdrawalOwner})
             ]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -954,7 +954,7 @@ prepare(OperationID = 'ListWithdrawals', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -983,7 +983,7 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -999,7 +999,7 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetWithdrawalEvents',
-    Req = #{
+    _Req = #{
         'withdrawalID' := WithdrawalId,
         'eventID' := EventId
     },
@@ -1012,7 +1012,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1043,7 +1043,7 @@ prepare(OperationID = 'ListDeposits', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1079,7 +1079,7 @@ prepare(OperationID = 'ListDepositReverts', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1115,7 +1115,7 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1140,7 +1140,7 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
 %% W2W
 prepare(
     OperationID = 'CreateW2WTransfer',
-    Req = #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}},
+    _Req = #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}},
     Context,
     _Opts
 ) ->
@@ -1150,7 +1150,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1211,7 +1211,7 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
+prepare(OperationID = 'GetW2WTransfer', _Req = #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
     {ResultW2WTransfer, ResultW2WTransferOwner} =
         case wapi_w2w_backend:get_transfer(W2WTransferId, Context) of
             {ok, W2WTransfer, Owner} -> {W2WTransfer, Owner};
@@ -1231,7 +1231,7 @@ prepare(OperationID = 'GetW2WTransfer', Req = #{w2wTransferID := W2WTransferId},
                 )
             ]}
         ],
-        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context, Req)),
+        Resolution = mask_notfound(wapi_auth:authorize_operation(Prototypes, Context)),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1260,7 +1260,7 @@ prepare(
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1272,14 +1272,14 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWebhooks', Req = #{identityID := IdentityID}, Context, _Opts) ->
+prepare(OperationID = 'GetWebhooks', _Req = #{identityID := IdentityID}, Context, _Opts) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1299,7 +1299,7 @@ prepare(OperationID = 'GetWebhooks', Req = #{identityID := IdentityID}, Context,
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
+prepare(OperationID = 'GetWebhookByID', _Req = #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
     AuthContext = build_auth_context(
         [
             {identity, IdentityID},
@@ -1313,7 +1313,7 @@ prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhoo
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1335,7 +1335,12 @@ prepare(OperationID = 'GetWebhookByID', Req = #{identityID := IdentityID, webhoo
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
+prepare(
+    OperationID = 'DeleteWebhookByID',
+    _Req = #{identityID := IdentityID, webhookID := WebhookID},
+    Context,
+    _Opts
+) ->
     AuthContext = build_auth_context(
         [
             {identity, IdentityID},
@@ -1349,7 +1354,7 @@ prepare(OperationID = 'DeleteWebhookByID', Req = #{identityID := IdentityID, web
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1379,7 +1384,7 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1427,7 +1432,7 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetReport',
-    Req = #{
+    _Req = #{
         identityID := IdentityID,
         reportID := ReportId
     },
@@ -1454,7 +1459,7 @@ prepare(
                     AuthContext
                 )}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1487,7 +1492,7 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
             {operation, build_prototype_for(operation, #{id => OperationID}, AuthContext)},
             {wallet, build_prototype_for(wallet, [], AuthContext)}
         ],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1533,10 +1538,10 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'DownloadFile', Req = #{fileID := FileId}, Context, _Opts) ->
+prepare(OperationID = 'DownloadFile', _Req = #{fileID := FileId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1550,10 +1555,10 @@ prepare(OperationID = 'DownloadFile', Req = #{fileID := FileId}, Context, _Opts)
     end,
     {ok, #{authorize => Authorize, process => Process}};
 %% Residences
-prepare(OperationID = 'GetResidence', Req = #{'residence' := ResidenceId}, Context, _Opts) ->
+prepare(OperationID = 'GetResidence', _Req = #{'residence' := ResidenceId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1564,10 +1569,10 @@ prepare(OperationID = 'GetResidence', Req = #{'residence' := ResidenceId}, Conte
     end,
     {ok, #{authorize => Authorize, process => Process}};
 %% Currencies
-prepare(OperationID = 'GetCurrency', Req = #{'currencyID' := CurrencyId}, Context, _Opts) ->
+prepare(OperationID = 'GetCurrency', _Req = #{'currencyID' := CurrencyId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
-        Resolution = wapi_auth:authorize_operation(Prototypes, Context, Req),
+        Resolution = wapi_auth:authorize_operation(Prototypes, Context),
         {ok, Resolution}
     end,
     Process = fun() ->
@@ -1586,7 +1591,7 @@ get_location(OperationId, Params, Opts) ->
 issue_grant_token(TokenSpec, Expiration, Context) ->
     case get_expiration_deadline(Expiration) of
         {ok, Deadline} ->
-            {ok, wapi_auth:issue_access_token(wapi_handler_utils:get_owner(Context), TokenSpec, Deadline)};
+            {ok, wapi_tokens_legacy:issue_access_token(wapi_handler_utils:get_owner(Context), TokenSpec, Deadline)};
         Error = {error, _} ->
             Error
     end.
