@@ -208,7 +208,6 @@ prepare(OperationID = 'GetIdentity', _Req = #{'identityID' := IdentityId}, Conte
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultIdentity, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultIdentity)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -266,7 +265,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenges(IdentityId, Status, Context) of
             {ok, Challenges} -> wapi_handler_utils:reply_ok(200, Challenges);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -293,7 +291,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:create_identity_challenge(IdentityId, Params, Context) of
             {ok, Challenge = #{<<"id">> := ChallengeId}} ->
                 wapi_handler_utils:reply_ok(202, Challenge, get_location('GetIdentityChallenge', [ChallengeId], Opts));
@@ -340,7 +337,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge(IdentityId, ChallengeId, Context) of
             {ok, Challenge} -> wapi_handler_utils:reply_ok(200, Challenge);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
@@ -360,7 +356,6 @@ prepare(OperationID = 'PollIdentityChallengeEvents', Req = #{'identityID' := Ide
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge_events(Req, Context) of
             {ok, Events} -> wapi_handler_utils:reply_ok(200, Events);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -379,7 +374,6 @@ prepare(OperationID = 'GetIdentityChallengeEvent', Req = #{'identityID' := Ident
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge_event(Req, Context) of
             {ok, Event} -> wapi_handler_utils:reply_ok(200, Event);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
@@ -404,7 +398,6 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_wallets(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -437,7 +430,6 @@ prepare(OperationID = 'GetWallet', _Req = #{'walletID' := WalletId}, Context, _O
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultWallet, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultWalletOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -461,7 +453,6 @@ prepare(OperationID = 'GetWalletByExternalID', _Req = #{externalID := ExternalID
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultWallet, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultWalletOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -477,15 +468,6 @@ prepare(OperationID = 'CreateWallet', _Req = #{'Wallet' := Params = #{<<"identit
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            )
-        ),
         case wapi_wallet_backend:create(Params, Context) of
             {ok, Wallet = #{<<"id">> := WalletId}} ->
                 wapi_handler_utils:reply_ok(201, Wallet, get_location('GetWallet', [WalletId], Opts));
@@ -512,7 +494,6 @@ prepare(OperationID = 'GetWalletAccount', _Req = #{'walletID' := WalletId}, Cont
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_wallet_backend:get_account(WalletId, Context) of
             {ok, WalletAccount} -> wapi_handler_utils:reply_ok(200, WalletAccount);
             {error, {wallet, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -539,7 +520,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_backend_utils:issue_grant_token({wallets, WalletId, Asset}, Expiration, Context) of
             {ok, Token} ->
                 wapi_handler_utils:reply_ok(201, #{
@@ -572,7 +552,6 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_destinations(Req, Context) of
             {ok, StatResult} ->
                 wapi_handler_utils:reply_ok(200, StatResult);
@@ -614,7 +593,6 @@ prepare(OperationID = 'GetDestination', _Req = #{'destinationID' := DestinationI
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultDestination, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultDestinationOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -644,7 +622,6 @@ prepare(OperationID = 'GetDestinationByExternalID', _Req = #{'externalID' := Ext
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultDestination, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultDestinationOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -665,15 +642,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            )
-        ),
         case wapi_destination_backend:create(Params, Context) of
             {ok, Destination = #{<<"id">> := DestinationId}} ->
                 wapi_handler_utils:reply_ok(201, Destination, get_location('GetDestination', [DestinationId], Opts));
@@ -714,7 +682,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case issue_grant_token({destinations, DestinationId}, Expiration, Context) of
             {ok, Token} ->
                 wapi_handler_utils:reply_ok(201, #{
@@ -751,8 +718,6 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        %% NOTE: This means grants are non-functional, fix ASAP
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_withdrawal_backend:create_quote(Req, Context) of
             {ok, Quote} ->
                 wapi_handler_utils:reply_ok(202, Quote);
@@ -816,8 +781,6 @@ prepare(OperationID = 'CreateWithdrawal', _Req = #{'WithdrawalParameters' := Par
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        %% NOTE: This means grants are non-functional, fix ASAP
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_withdrawal_backend:create(Params, Context) of
             {ok, Withdrawal = #{<<"id">> := WithdrawalId}} ->
                 wapi_handler_utils:reply_ok(202, Withdrawal, get_location('GetWithdrawal', [WithdrawalId], Opts));
@@ -908,7 +871,6 @@ prepare(OperationID = 'GetWithdrawal', _Req = #{'withdrawalID' := WithdrawalId},
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultWithdrawal, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultWithdrawalOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWithdrawal)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -934,7 +896,6 @@ prepare(OperationID = 'GetWithdrawalByExternalID', _Req = #{'externalID' := Exte
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultWithdrawal, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultWithdrawalOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWithdrawal)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -959,7 +920,6 @@ prepare(OperationID = 'ListWithdrawals', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_withdrawals(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -988,7 +948,6 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:get_events(Req, Context) of
             {ok, Events} ->
                 wapi_handler_utils:reply_ok(200, Events);
@@ -1017,7 +976,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:get_event(WithdrawalId, EventId, Context) of
             {ok, Event} ->
                 wapi_handler_utils:reply_ok(200, Event);
@@ -1048,7 +1006,6 @@ prepare(OperationID = 'ListDeposits', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposits(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1084,7 +1041,6 @@ prepare(OperationID = 'ListDepositReverts', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposit_reverts(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1120,7 +1076,6 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposit_adjustments(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1156,15 +1111,6 @@ prepare(
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(
             AuthContext,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such wallet sender">>)
-            )
-        ),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
             wapi_handler_utils:reply_ok(
                 422,
                 wapi_handler_utils:get_error_msg(<<"No such wallet sender">>)
@@ -1236,7 +1182,6 @@ prepare(OperationID = 'GetW2WTransfer', _Req = #{w2wTransferID := W2WTransferId}
     end,
     Process = fun() ->
         wapi_handler:respond_if_undefined(ResultW2WTransfer, wapi_handler_utils:reply_ok(404)),
-        respond_if_not_owned(OperationID, ResultW2WTransferOwner, Context, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultW2WTransfer)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1265,7 +1210,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(OperationID, AuthContext, Context, wapi_handler_utils:reply_ok(422)),
         case wapi_webhook_backend:create_webhook(Req, Context) of
             {ok, Webhook} ->
                 wapi_handler_utils:reply_ok(201, Webhook)
@@ -1284,15 +1228,6 @@ prepare(OperationID = 'GetWebhooks', _Req = #{identityID := IdentityID}, Context
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            )
-        ),
         case wapi_webhook_backend:get_webhooks(IdentityID, Context) of
             {ok, Webhooks} ->
                 wapi_handler_utils:reply_ok(200, Webhooks)
@@ -1318,15 +1253,6 @@ prepare(OperationID = 'GetWebhookByID', _Req = #{identityID := IdentityID, webho
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            )
-        ),
         case wapi_webhook_backend:get_webhook(WebhookID, Context) of
             {ok, Webhook} ->
                 wapi_handler_utils:reply_ok(200, Webhook);
@@ -1359,15 +1285,6 @@ prepare(
     end,
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such identity">>)
-            )
-        ),
         case wapi_webhook_backend:delete_webhook(WebhookID, Context) of
             ok ->
                 wapi_handler_utils:reply_ok(204);
@@ -1390,16 +1307,6 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(
             AuthContext,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
             wapi_handler_utils:reply_ok(400, #{
                 <<"errorType">> => <<"NotFound">>,
                 <<"name">> => <<"identity">>,
@@ -1471,16 +1378,6 @@ prepare(
                 <<"description">> => <<"identity not found">>
             })
         ),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
         wapi_handler:respond_if_undefined(ResultReport, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultReport)
     end,
@@ -1498,16 +1395,6 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
     Process = fun() ->
         respond_if_any_undefined_in_auth_context(
             AuthContext,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
-        respond_if_any_misowned_in_auth_context(
-            OperationID,
-            AuthContext,
-            Context,
             wapi_handler_utils:reply_ok(400, #{
                 <<"errorType">> => <<"NotFound">>,
                 <<"name">> => <<"identity">>,
@@ -1700,39 +1587,6 @@ respond_if_any_undefined_in_auth_context(AuthContext, Respond) ->
             wapi_handler:respond_if_undefined(undefined, Respond);
         false ->
             ok
-    end.
-
-%% @TODO: following 2 functions are to be removed when legacy auth is removed
-respond_if_any_misowned_in_auth_context(OperationID, AuthContext, HandlerContext, Respond) ->
-    Owner = wapi_handler_utils:get_owner(HandlerContext),
-    case
-        lists:all(
-            fun
-                ({_Type, {_, _, EntityOwner}}) -> EntityOwner =:= Owner;
-                ({_Type, {_, _}}) -> true;
-                (_) -> false
-            end,
-            AuthContext
-        )
-    of
-        true ->
-            ok;
-        false ->
-            _ = logger:warning("Bouncer allowed operation ~p, but some entities are not owned by acting party", [
-                OperationID
-            ]),
-            wapi_handler:respond_if_undefined(undefined, Respond)
-    end.
-
-respond_if_not_owned(OperationID, Owner, HandlerContext, Respond) ->
-    case Owner =:= wapi_handler_utils:get_owner(HandlerContext) of
-        true ->
-            ok;
-        false ->
-            _ = logger:warning("Bouncer allowed operation ~p, but some entities are not owned by acting party", [
-                OperationID
-            ]),
-            wapi_handler:respond_if_undefined(undefined, Respond)
     end.
 
 % seconds
