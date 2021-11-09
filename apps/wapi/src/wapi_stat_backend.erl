@@ -102,7 +102,8 @@ create_query(deposits, Req, Context) ->
         <<"to_time">> => get_time(createdAtTo, Req),
         <<"amount_from">> => genlib_map:get(amountFrom, Req),
         <<"amount_to">> => genlib_map:get(amountTo, Req),
-        <<"currency_code">> => genlib_map:get(currencyID, Req)
+        <<"currency_code">> => genlib_map:get(currencyID, Req),
+        <<"revert_status">> => genlib_map:get(revertStatus, Req)
     };
 create_query(wallets, Req, Context) ->
     #{
