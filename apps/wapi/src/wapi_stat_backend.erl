@@ -236,7 +236,8 @@ unmarshal_response(deposits, Response) ->
             <<"fee">> => unmarshal_cash(
                 Response#fistfulstat_StatDeposit.fee,
                 Response#fistfulstat_StatDeposit.currency_symbolic_code
-            )
+            ),
+            <<"revertStatus">> => atom_to_binary(Response#fistfulstat_StatDeposit.revert_status)
         },
         unmarshal_deposit_stat_status(Response#fistfulstat_StatDeposit.status)
     );
