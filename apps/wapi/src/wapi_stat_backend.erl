@@ -237,7 +237,7 @@ unmarshal_response(deposits, Response) ->
                 Response#fistfulstat_StatDeposit.fee,
                 Response#fistfulstat_StatDeposit.currency_symbolic_code
             ),
-            <<"revertStatus">> => atom_to_binary(Response#fistfulstat_StatDeposit.revert_status)
+            <<"revertStatus">> => unmarshal_revert_status(Response#fistfulstat_StatDeposit.revert_status)
         },
         unmarshal_deposit_stat_status(Response#fistfulstat_StatDeposit.status)
     );
@@ -308,6 +308,11 @@ unmarshal_status({failed, _}) ->
         <<"status">> => <<"Failed">>,
         <<"failure">> => #{<<"code">> => <<"failed">>}
     }.
+
+unmarshal_revert_status(undefined) ->
+    undefined;
+unmarshal_revert_status(Status) when is_atom(Status) ->
+    atom_to_binary(Status).
 
 unmarshal_changes_plan(#fistfulstat_DepositAdjustmentChangesPlan{new_cash = Cash, new_status = Status}) ->
     maps:merge(#{<<"cash">> => unmarshal_cash_change_plan(Cash)}, unmarshal_status_change_plan(Status)).
