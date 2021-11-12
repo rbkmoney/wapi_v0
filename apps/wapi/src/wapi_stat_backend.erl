@@ -311,8 +311,12 @@ unmarshal_status({failed, _}) ->
 
 unmarshal_revert_status(undefined) ->
     undefined;
-unmarshal_revert_status(Status) when is_atom(Status) ->
-    atom_to_binary(Status).
+unmarshal_revert_status(none) ->
+    <<"None"/utf8>>;
+unmarshal_revert_status(partial) ->
+    <<"Partial"/utf8>>;
+unmarshal_revert_status(full) ->
+    <<"Full"/utf8>>.
 
 unmarshal_changes_plan(#fistfulstat_DepositAdjustmentChangesPlan{new_cash = Cash, new_status = Status}) ->
     maps:merge(#{<<"cash">> => unmarshal_cash_change_plan(Cash)}, unmarshal_status_change_plan(Status)).
