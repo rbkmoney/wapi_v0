@@ -42,8 +42,6 @@ get_access_config() ->
     }.
 
 -spec get_resource_hierarchy() -> #{atom() => map()}.
-%% TODO put some sense in here
-% This resource hierarchy refers to wallet api actaully
 get_resource_hierarchy() ->
     #{
         party => #{

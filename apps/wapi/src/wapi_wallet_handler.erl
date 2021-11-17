@@ -87,7 +87,7 @@ handle_request(OperationID, Req, SwagContext, Opts) ->
 
 %% Providers
 -spec prepare(operation_id(), req_data(), handler_context(), handler_opts()) -> {ok, request_state()} | no_return().
-prepare(OperationID = 'ListProviders', _Req = #{'residence' := Residence}, Context, _Opts) ->
+prepare(OperationID = 'ListProviders', #{'residence' := Residence}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -98,7 +98,7 @@ prepare(OperationID = 'ListProviders', _Req = #{'residence' := Residence}, Conte
         wapi_handler_utils:reply_ok(200, Providers)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetProvider', _Req = #{'providerID' := Id}, Context, _Opts) ->
+prepare(OperationID = 'GetProvider', #{'providerID' := Id}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -111,7 +111,7 @@ prepare(OperationID = 'GetProvider', _Req = #{'providerID' := Id}, Context, _Opt
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'ListProviderIdentityClasses', _Req = #{'providerID' := Id}, Context, _Opts) ->
+prepare(OperationID = 'ListProviderIdentityClasses', #{'providerID' := Id}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -126,7 +126,7 @@ prepare(OperationID = 'ListProviderIdentityClasses', _Req = #{'providerID' := Id
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetProviderIdentityClass',
-    _Req = #{
+    #{
         'providerID' := ProviderId,
         'identityClassID' := ClassId
     },
@@ -147,7 +147,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     _OperationID = 'ListProviderIdentityLevels',
-    _Req = #{
+    #{
         'providerID' := _ProviderId,
         'identityClassID' := _ClassId
     },
@@ -157,7 +157,7 @@ prepare(
     not_implemented();
 prepare(
     _OperationID = 'GetProviderIdentityLevel',
-    _Req = #{
+    #{
         'providerID' := _ProviderId,
         'identityClassID' := _ClassId,
         'identityLevelID' := _LevelId
@@ -192,7 +192,7 @@ prepare(OperationID = 'ListIdentities', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetIdentity', _Req = #{'identityID' := IdentityId}, Context, _Opts) ->
+prepare(OperationID = 'GetIdentity', #{'identityID' := IdentityId}, Context, _Opts) ->
     {ResultIdentity, ResultOwner} =
         case wapi_identity_backend:get_identity(IdentityId, Context) of
             {ok, Identity, Owner} -> {Identity, Owner};
@@ -207,11 +207,10 @@ prepare(OperationID = 'GetIdentity', _Req = #{'identityID' := IdentityId}, Conte
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultIdentity, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultIdentity)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateIdentity', _Req = #{'Identity' := Params}, Context, Opts) ->
+prepare(OperationID = 'CreateIdentity', #{'Identity' := Params}, Context, Opts) ->
     Authorize = fun() ->
         PartyID =
             case maps:get(<<"partyID">>, Params, undefined) of
@@ -250,7 +249,7 @@ prepare(OperationID = 'CreateIdentity', _Req = #{'Identity' := Params}, Context,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'ListIdentityChallenges',
-    _Req = #{'identityID' := IdentityId, 'status' := Status},
+    #{'identityID' := IdentityId, 'status' := Status},
     Context,
     _Opts
 ) ->
@@ -264,7 +263,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenges(IdentityId, Status, Context) of
             {ok, Challenges} -> wapi_handler_utils:reply_ok(200, Challenges);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -273,7 +271,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'StartIdentityChallenge',
-    _Req = #{
+    #{
         'identityID' := IdentityId,
         'IdentityChallenge' := Params
     },
@@ -290,7 +288,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:create_identity_challenge(IdentityId, Params, Context) of
             {ok, Challenge = #{<<"id">> := ChallengeId}} ->
                 wapi_handler_utils:reply_ok(202, Challenge, get_location('GetIdentityChallenge', [ChallengeId], Opts));
@@ -319,7 +316,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetIdentityChallenge',
-    _Req = #{
+    #{
         'identityID' := IdentityId,
         'challengeID' := ChallengeId
     },
@@ -336,7 +333,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge(IdentityId, ChallengeId, Context) of
             {ok, Challenge} -> wapi_handler_utils:reply_ok(200, Challenge);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
@@ -355,7 +351,6 @@ prepare(OperationID = 'PollIdentityChallengeEvents', Req = #{'identityID' := Ide
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge_events(Req, Context) of
             {ok, Events} -> wapi_handler_utils:reply_ok(200, Events);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -373,7 +368,6 @@ prepare(OperationID = 'GetIdentityChallengeEvent', Req = #{'identityID' := Ident
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_identity_backend:get_identity_challenge_event(Req, Context) of
             {ok, Event} -> wapi_handler_utils:reply_ok(200, Event);
             {error, {identity, notfound}} -> wapi_handler_utils:reply_ok(404);
@@ -397,7 +391,6 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_wallets(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -414,7 +407,7 @@ prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWallet', _Req = #{'walletID' := WalletId}, Context, _Opts) ->
+prepare(OperationID = 'GetWallet', #{'walletID' := WalletId}, Context, _Opts) ->
     {ResultWallet, ResultWalletOwner} =
         case wapi_wallet_backend:get(WalletId, Context) of
             {ok, Wallet, Owner} -> {Wallet, Owner};
@@ -429,11 +422,10 @@ prepare(OperationID = 'GetWallet', _Req = #{'walletID' := WalletId}, Context, _O
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultWallet, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWalletByExternalID', _Req = #{externalID := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetWalletByExternalID', #{externalID := ExternalID}, Context, _Opts) ->
     {ResultWallet, ResultWalletOwner, WalletId} =
         case wapi_wallet_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -452,11 +444,10 @@ prepare(OperationID = 'GetWalletByExternalID', _Req = #{externalID := ExternalID
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultWallet, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWallet)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateWallet', _Req = #{'Wallet' := Params = #{<<"identity">> := IdentityID}}, Context, Opts) ->
+prepare(OperationID = 'CreateWallet', #{'Wallet' := Params = #{<<"identity">> := IdentityID}}, Context, Opts) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -467,7 +458,6 @@ prepare(OperationID = 'CreateWallet', _Req = #{'Wallet' := Params = #{<<"identit
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_wallet_backend:create(Params, Context) of
             {ok, Wallet = #{<<"id">> := WalletId}} ->
                 wapi_handler_utils:reply_ok(201, Wallet, get_location('GetWallet', [WalletId], Opts));
@@ -482,7 +472,7 @@ prepare(OperationID = 'CreateWallet', _Req = #{'Wallet' := Params = #{<<"identit
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWalletAccount', _Req = #{'walletID' := WalletId}, Context, _Opts) ->
+prepare(OperationID = 'GetWalletAccount', #{'walletID' := WalletId}, Context, _Opts) ->
     AuthContext = build_auth_context([{wallet, WalletId}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -493,7 +483,6 @@ prepare(OperationID = 'GetWalletAccount', _Req = #{'walletID' := WalletId}, Cont
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_wallet_backend:get_account(WalletId, Context) of
             {ok, WalletAccount} -> wapi_handler_utils:reply_ok(200, WalletAccount);
             {error, {wallet, notfound}} -> wapi_handler_utils:reply_ok(404)
@@ -502,7 +491,7 @@ prepare(OperationID = 'GetWalletAccount', _Req = #{'walletID' := WalletId}, Cont
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'IssueWalletGrant',
-    _Req = #{
+    #{
         'walletID' := WalletId,
         'WalletGrantRequest' := #{<<"validUntil">> := Expiration, <<"asset">> := Asset}
     },
@@ -519,7 +508,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_backend_utils:issue_grant_token({wallets, WalletId, Asset}, Expiration, Context) of
             {ok, Token} ->
                 wapi_handler_utils:reply_ok(201, #{
@@ -551,7 +539,6 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_destinations(Req, Context) of
             {ok, StatResult} ->
                 wapi_handler_utils:reply_ok(200, StatResult);
@@ -568,7 +555,7 @@ prepare(OperationID = 'ListDestinations', Req, Context, _Opts) ->
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetDestination', _Req = #{'destinationID' := DestinationId}, Context, _Opts) ->
+prepare(OperationID = 'GetDestination', #{'destinationID' := DestinationId}, Context, _Opts) ->
     {ResultDestination, ResultDestinationOwner} =
         case wapi_destination_backend:get(DestinationId, Context) of
             {ok, Destination, Owner} -> {Destination, Owner};
@@ -592,11 +579,10 @@ prepare(OperationID = 'GetDestination', _Req = #{'destinationID' := DestinationI
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultDestination, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetDestinationByExternalID', _Req = #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetDestinationByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
     {ResultDestination, ResultDestinationOwner, DestinationId} =
         case wapi_destination_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -621,13 +607,12 @@ prepare(OperationID = 'GetDestinationByExternalID', _Req = #{'externalID' := Ext
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultDestination, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultDestination)
     end,
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'CreateDestination',
-    _Req = #{'Destination' := Params = #{<<"identity">> := IdentityID}},
+    #{'Destination' := Params = #{<<"identity">> := IdentityID}},
     Context,
     Opts
 ) ->
@@ -641,7 +626,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_destination_backend:create(Params, Context) of
             {ok, Destination = #{<<"id">> := DestinationId}} ->
                 wapi_handler_utils:reply_ok(201, Destination, get_location('GetDestination', [DestinationId], Opts));
@@ -664,7 +648,7 @@ prepare(
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'IssueDestinationGrant',
-    _Req = #{
+    #{
         'destinationID' := DestinationId,
         'DestinationGrantRequest' := #{<<"validUntil">> := Expiration}
     },
@@ -681,7 +665,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case issue_grant_token({destinations, DestinationId}, Expiration, Context) of
             {ok, Token} ->
                 wapi_handler_utils:reply_ok(201, #{
@@ -717,7 +700,6 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:create_quote(Req, Context) of
             {ok, Quote} ->
                 wapi_handler_utils:reply_ok(202, Quote);
@@ -762,7 +744,7 @@ prepare(OperationID = 'CreateQuote', Req = #{'WithdrawalQuoteParams' := Params},
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'CreateWithdrawal', _Req = #{'WithdrawalParameters' := Params}, Context, Opts) ->
+prepare(OperationID = 'CreateWithdrawal', #{'WithdrawalParameters' := Params}, Context, Opts) ->
     AuthContext = build_auth_context(
         [
             {wallet, maps:get(<<"wallet">>, Params)},
@@ -780,7 +762,6 @@ prepare(OperationID = 'CreateWithdrawal', _Req = #{'WithdrawalParameters' := Par
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:create(Params, Context) of
             {ok, Withdrawal = #{<<"id">> := WithdrawalId}} ->
                 wapi_handler_utils:reply_ok(202, Withdrawal, get_location('GetWithdrawal', [WithdrawalId], Opts));
@@ -850,7 +831,7 @@ prepare(OperationID = 'CreateWithdrawal', _Req = #{'WithdrawalParameters' := Par
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWithdrawal', _Req = #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
+prepare(OperationID = 'GetWithdrawal', #{'withdrawalID' := WithdrawalId}, Context, _Opts) ->
     {ResultWithdrawal, ResultWithdrawalOwner} =
         case wapi_withdrawal_backend:get(WithdrawalId, Context) of
             {ok, Withdrawal, Owner} -> {Withdrawal, Owner};
@@ -870,11 +851,10 @@ prepare(OperationID = 'GetWithdrawal', _Req = #{'withdrawalID' := WithdrawalId},
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultWithdrawal, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWithdrawal)
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWithdrawalByExternalID', _Req = #{'externalID' := ExternalID}, Context, _Opts) ->
+prepare(OperationID = 'GetWithdrawalByExternalID', #{'externalID' := ExternalID}, Context, _Opts) ->
     {ResultWithdrawal, ResultWithdrawalOwner, WithdrawalId} =
         case wapi_withdrawal_backend:get_by_external_id(ExternalID, Context) of
             {ok, Wallet = #{<<"id">> := ID}, Owner} -> {Wallet, Owner, ID};
@@ -895,7 +875,6 @@ prepare(OperationID = 'GetWithdrawalByExternalID', _Req = #{'externalID' := Exte
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultWithdrawal, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultWithdrawal)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -919,7 +898,6 @@ prepare(OperationID = 'ListWithdrawals', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_withdrawals(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -947,7 +925,6 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:get_events(Req, Context) of
             {ok, Events} ->
                 wapi_handler_utils:reply_ok(200, Events);
@@ -958,7 +935,7 @@ prepare(OperationID = 'PollWithdrawalEvents', Req = #{'withdrawalID' := Withdraw
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetWithdrawalEvents',
-    _Req = #{
+    #{
         'withdrawalID' := WithdrawalId,
         'eventID' := EventId
     },
@@ -975,7 +952,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_withdrawal_backend:get_event(WithdrawalId, EventId, Context) of
             {ok, Event} ->
                 wapi_handler_utils:reply_ok(200, Event);
@@ -1005,7 +981,6 @@ prepare(OperationID = 'ListDeposits', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposits(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1040,7 +1015,6 @@ prepare(OperationID = 'ListDepositReverts', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposit_reverts(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1075,7 +1049,6 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_stat_backend:list_deposit_adjustments(Req, Context) of
             {ok, List} ->
                 wapi_handler_utils:reply_ok(200, List);
@@ -1095,7 +1068,7 @@ prepare(OperationID = 'ListDepositAdjustments', Req, Context, _Opts) ->
 %% W2W
 prepare(
     OperationID = 'CreateW2WTransfer',
-    _Req = #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}},
+    #{'W2WTransferParameters' := Params = #{<<"sender">> := SenderID}},
     Context,
     _Opts
 ) ->
@@ -1109,13 +1082,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(
-            AuthContext,
-            wapi_handler_utils:reply_ok(
-                422,
-                wapi_handler_utils:get_error_msg(<<"No such wallet sender">>)
-            )
-        ),
         case wapi_w2w_backend:create_transfer(Params, Context) of
             {ok, W2WTransfer} ->
                 wapi_handler_utils:reply_ok(202, W2WTransfer);
@@ -1157,7 +1123,7 @@ prepare(
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetW2WTransfer', _Req = #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
+prepare(OperationID = 'GetW2WTransfer', #{w2wTransferID := W2WTransferId}, Context, _Opts) ->
     {ResultW2WTransfer, ResultW2WTransferOwner} =
         case wapi_w2w_backend:get_transfer(W2WTransferId, Context) of
             {ok, W2WTransfer, Owner} -> {W2WTransfer, Owner};
@@ -1181,7 +1147,6 @@ prepare(OperationID = 'GetW2WTransfer', _Req = #{w2wTransferID := W2WTransferId}
         {ok, Resolution}
     end,
     Process = fun() ->
-        wapi_handler:respond_if_undefined(ResultW2WTransfer, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultW2WTransfer)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1209,14 +1174,13 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_webhook_backend:create_webhook(Req, Context) of
             {ok, Webhook} ->
                 wapi_handler_utils:reply_ok(201, Webhook)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWebhooks', _Req = #{identityID := IdentityID}, Context, _Opts) ->
+prepare(OperationID = 'GetWebhooks', #{identityID := IdentityID}, Context, _Opts) ->
     AuthContext = build_auth_context([{identity, IdentityID}], [], Context),
     Authorize = fun() ->
         Prototypes = [
@@ -1227,14 +1191,13 @@ prepare(OperationID = 'GetWebhooks', _Req = #{identityID := IdentityID}, Context
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_webhook_backend:get_webhooks(IdentityID, Context) of
             {ok, Webhooks} ->
                 wapi_handler_utils:reply_ok(200, Webhooks)
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'GetWebhookByID', _Req = #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
+prepare(OperationID = 'GetWebhookByID', #{identityID := IdentityID, webhookID := WebhookID}, Context, _Opts) ->
     AuthContext = build_auth_context(
         [
             {identity, IdentityID},
@@ -1252,7 +1215,6 @@ prepare(OperationID = 'GetWebhookByID', _Req = #{identityID := IdentityID, webho
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_webhook_backend:get_webhook(WebhookID, Context) of
             {ok, Webhook} ->
                 wapi_handler_utils:reply_ok(200, Webhook);
@@ -1263,7 +1225,7 @@ prepare(OperationID = 'GetWebhookByID', _Req = #{identityID := IdentityID, webho
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'DeleteWebhookByID',
-    _Req = #{identityID := IdentityID, webhookID := WebhookID},
+    #{identityID := IdentityID, webhookID := WebhookID},
     Context,
     _Opts
 ) ->
@@ -1284,7 +1246,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(AuthContext, wapi_handler_utils:reply_ok(404)),
         case wapi_webhook_backend:delete_webhook(WebhookID, Context) of
             ok ->
                 wapi_handler_utils:reply_ok(204);
@@ -1305,14 +1266,6 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(
-            AuthContext,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
         case wapi_report_backend:create_report(Req, Context) of
             {ok, Report} ->
                 wapi_handler_utils:reply_ok(201, Report);
@@ -1339,7 +1292,7 @@ prepare(OperationID = 'CreateReport', Req = #{identityID := IdentityID}, Context
     {ok, #{authorize => Authorize, process => Process}};
 prepare(
     OperationID = 'GetReport',
-    _Req = #{
+    #{
         identityID := IdentityID,
         reportID := ReportId
     },
@@ -1370,15 +1323,6 @@ prepare(
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(
-            AuthContext,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
-        wapi_handler:respond_if_undefined(ResultReport, wapi_handler_utils:reply_ok(404)),
         wapi_handler_utils:reply_ok(200, ResultReport)
     end,
     {ok, #{authorize => Authorize, process => Process}};
@@ -1393,14 +1337,6 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
         {ok, Resolution}
     end,
     Process = fun() ->
-        respond_if_any_undefined_in_auth_context(
-            AuthContext,
-            wapi_handler_utils:reply_ok(400, #{
-                <<"errorType">> => <<"NotFound">>,
-                <<"name">> => <<"identity">>,
-                <<"description">> => <<"identity not found">>
-            })
-        ),
         case wapi_report_backend:get_reports(Req, Context) of
             {ok, ReportList} ->
                 wapi_handler_utils:reply_ok(200, ReportList);
@@ -1425,7 +1361,7 @@ prepare(OperationID = 'GetReports', Req = #{identityID := IdentityID}, Context, 
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-prepare(OperationID = 'DownloadFile', _Req = #{fileID := FileId}, Context, _Opts) ->
+prepare(OperationID = 'DownloadFile', #{fileID := FileId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -1442,7 +1378,7 @@ prepare(OperationID = 'DownloadFile', _Req = #{fileID := FileId}, Context, _Opts
     end,
     {ok, #{authorize => Authorize, process => Process}};
 %% Residences
-prepare(OperationID = 'GetResidence', _Req = #{'residence' := ResidenceId}, Context, _Opts) ->
+prepare(OperationID = 'GetResidence', #{'residence' := ResidenceId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -1456,7 +1392,7 @@ prepare(OperationID = 'GetResidence', _Req = #{'residence' := ResidenceId}, Cont
     end,
     {ok, #{authorize => Authorize, process => Process}};
 %% Currencies
-prepare(OperationID = 'GetCurrency', _Req = #{'currencyID' := CurrencyId}, Context, _Opts) ->
+prepare(OperationID = 'GetCurrency', #{'currencyID' := CurrencyId}, Context, _Opts) ->
     Authorize = fun() ->
         Prototypes = [{operation, #{id => OperationID}}],
         Resolution = wapi_auth:authorize_operation(Prototypes, Context),
@@ -1571,23 +1507,6 @@ build_prototype_for(wallet, Entities, AuthContext) ->
         Entities,
         AuthContext
     ).
-
-respond_if_any_undefined_in_auth_context(AuthContext, Respond) ->
-    case
-        lists:any(
-            fun
-                ({_Type, {_, undefined, _}}) -> true;
-                ({_Type, {_, undefined}}) -> true;
-                (_) -> false
-            end,
-            AuthContext
-        )
-    of
-        true ->
-            wapi_handler:respond_if_undefined(undefined, Respond);
-        false ->
-            ok
-    end.
 
 % seconds
 -define(DEFAULT_URL_LIFETIME, 60).
