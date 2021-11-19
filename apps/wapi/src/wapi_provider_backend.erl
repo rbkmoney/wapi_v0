@@ -9,10 +9,6 @@
 -export([get_providers/2]).
 -export([get_provider/2]).
 
-%% Pipeline
-
--import(wapi_pipeline, [do/1, unwrap/1]).
-
 -spec get_providers([binary()], handler_context()) -> [map()].
 get_providers(Residences, HandlerContext) ->
     ResidenceSet = ordsets:from_list(Residences),

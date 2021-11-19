@@ -63,8 +63,6 @@ create_identity(ID, Params, HandlerContext) ->
             {error, {party, notfound}};
         {exception, #fistful_ProviderNotFound{}} ->
             {error, {provider, notfound}};
-        {exception, #fistful_IdentityClassNotFound{}} ->
-            {error, {identity_class, notfound}};
         {exception, #fistful_PartyInaccessible{}} ->
             {error, inaccessible};
         {exception, Details} ->
@@ -108,8 +106,6 @@ service_call(Params, Ctx) ->
 
 %% Marshaling
 
-marshal({list, Type}, List) ->
-    lists:map(fun(V) -> marshal(Type, V) end, List);
 marshal(
     identity_params,
     {
@@ -129,11 +125,6 @@ marshal(
         provider = marshal(string, Provider),
         external_id = marshal(id, ExternalID)
     };
-marshal(event_range, {Cursor, Limit}) ->
-    #'EventRange'{
-        'after' = marshal(integer, Cursor),
-        'limit' = marshal(integer, Limit)
-    };
 marshal(context, Ctx) ->
     wapi_codec:marshal(context, Ctx);
 marshal(T, V) ->
@@ -141,8 +132,6 @@ marshal(T, V) ->
 
 %%
 
-unmarshal({list, Type}, List) ->
-    lists:map(fun(V) -> unmarshal(Type, V) end, List);
 unmarshal(identity, #idnt_IdentityState{
     id = IdentityID,
     name = Name,
