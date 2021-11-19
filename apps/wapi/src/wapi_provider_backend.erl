@@ -43,7 +43,6 @@ get_provider_thrift(ProviderID, HandlerContext) ->
             {error, notfound}
     end.
 
-
 %% Marshaling
 
 unmarshal_providers(List) ->

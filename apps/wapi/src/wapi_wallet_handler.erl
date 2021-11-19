@@ -205,7 +205,6 @@ prepare(OperationID = 'CreateIdentity', Req = #{'Identity' := Params}, Context, 
         end
     end,
     {ok, #{authorize => Authorize, process => Process}};
-
 %% Wallets
 prepare(OperationID = 'ListWallets', Req, Context, _Opts) ->
     AuthContext = build_auth_context(

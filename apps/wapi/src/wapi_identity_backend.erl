@@ -13,7 +13,6 @@
 -export([get_identity/2]).
 -export([get_identities/2]).
 
-
 -export([get_thrift_identity/2]).
 
 -include_lib("fistful_proto/include/ff_proto_identity_thrift.hrl").
@@ -72,7 +71,6 @@ create_identity(ID, Params, HandlerContext) ->
 -spec get_identities(params(), handler_context()) -> no_return().
 get_identities(_Params, _Context) ->
     wapi_handler_utils:throw_not_implemented().
-
 
 -spec get_thrift_identity(id(), handler_context()) ->
     {ok, identity_state()}
