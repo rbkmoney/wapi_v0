@@ -1333,10 +1333,6 @@ get_default_url_lifetime() ->
     Lifetime = application:get_env(wapi, file_storage_url_lifetime, ?DEFAULT_URL_LIFETIME),
     genlib_rfc3339:format(Now + Lifetime, second).
 
--spec not_implemented() -> no_return().
-not_implemented() ->
-    wapi_handler_utils:throw_not_implemented().
-
 maybe_to_list(undefined) ->
     [];
 maybe_to_list(T) ->
